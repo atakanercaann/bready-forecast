@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bready Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one working column, sticky tab bar, dense tables that scroll sideways inside their own cards. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#111827; --muted:#4b5563; --line:#d3d8e0;
+  --accent:#1d4ed8; --accent-ink:#ffffff; --soft:#eaf0fc;
+  --warn:#a85a06; --warn-bg:#fdf0db; --crit:#b42318; --crit-bg:#fde7e4;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1218; --surface:#181c25; --ink:#eef1f6; --muted:#a8b1c0; --line:#2c3342;
+    --accent:#8fb0ff; --accent-ink:#0b1530; --soft:#1f2738;
+    --warn:#f0b35a; --warn-bg:#33270f; --crit:#ff8d80; --crit-bg:#3a1a16; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1218; --surface:#181c25; --ink:#eef1f6; --muted:#a8b1c0; --line:#2c3342;
+  --accent:#8fb0ff; --accent-ink:#0b1530; --soft:#1f2738;
+  --warn:#f0b35a; --warn-bg:#33270f; --crit:#ff8d80; --crit-bg:#3a1a16; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px 20px 8px;max-width:1200px;margin:0 auto}
+h1{font:700 24px/1.1 var(--display);margin:0;letter-spacing:-.01em}
+h1 small{font:500 13px var(--body);color:var(--muted);margin-left:8px;letter-spacing:0}
+h2{font:600 18px/1.2 var(--display);margin:0;text-wrap:balance}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+nav div{display:flex;gap:4px;max-width:1200px;margin:0 auto;padding:6px 16px;overflow-x:auto}
+nav button{border:0;background:none;color:var(--muted);font:600 15px var(--body);padding:10px 14px;border-radius:8px;cursor:pointer;white-space:nowrap}
+nav button[aria-current="true"]{background:var(--accent);color:var(--accent-ink)}
+nav .tn{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--soft);color:var(--accent);font-size:12px;margin-right:6px}
+nav button[aria-current="true"] .tn{background:var(--accent-ink);color:var(--accent)}
+nav .setb{margin-left:auto;border:1px solid var(--line)}
+.subnav{display:flex;flex-wrap:wrap;gap:6px}
+tr.sub td{background:var(--bg);padding:0}tr.sub table{font-size:14px}tr.sub td td{padding:6px 10px 6px 28px}
+tr.tap:hover td{background:var(--soft)}
+main{max-width:1200px;margin:0 auto;padding:16px 16px 60px;display:grid;gap:16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.hint{color:var(--muted);font-size:13px;margin:0;max-width:70ch}
+label.f{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:38px}
+input:focus-visible,select:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=number]{width:90px;text-align:right}
+input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--accent);cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+td input[type=number]{width:78px;padding:6px 8px;min-height:40px;font-weight:600}
+td input[type=text]{width:100%;min-width:120px;padding:5px 8px;min-height:32px}
+td select{padding:5px 6px;min-height:32px;max-width:220px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 14px var(--body);padding:8px 14px;border-radius:8px;cursor:pointer;min-height:38px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sm{padding:4px 10px;min-height:30px;font-size:13px}
+.btn.danger{color:var(--crit)}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);background:var(--soft);position:sticky;top:0}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:170px}
+tr:last-child td{border-bottom:0}
+tr.grp td{background:var(--soft);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink)}
+th .src{display:flex;flex-wrap:wrap;gap:2px 6px;justify-content:flex-end;font-size:10px;font-weight:500;letter-spacing:0;text-transform:none;color:var(--muted);margin-top:2px}th .src .off{text-decoration:line-through;opacity:.6}
+tr.tap{cursor:pointer}tr.tap td{padding:12px 10px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.steps button{display:flex;align-items:center;gap:10px;justify-content:center;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:600 16px var(--body);padding:12px 8px;border-radius:12px;cursor:pointer}
+.steps button[aria-current="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps i{font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--accent);font-size:14px;flex:none}
+.stp{display:inline-flex;gap:6px;align-items:center}
+.stp button{width:42px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--soft);color:var(--ink);font:600 20px var(--body);cursor:pointer}
+td.num b{font-weight:600}
+.ov{border-color:var(--accent)!important;background:var(--soft)!important;font-weight:600}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;background:var(--soft);color:var(--accent)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.crit{background:var(--crit-bg);color:var(--crit)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tile span{display:block;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.tile b{font:700 24px/1.2 var(--display)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:99px;padding:6px 12px;font:600 13px var(--body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-weight:500}
+.two{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+.list{display:grid;gap:2px;max-height:70vh;overflow:auto}
+.list button{text-align:left;border:0;background:none;color:var(--ink);font:inherit;padding:7px 10px;border-radius:8px;cursor:pointer}
+.list button[aria-current="true"]{background:var(--soft);font-weight:600;color:var(--accent)}
+.list .g{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:10px 10px 2px}
+textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.muted{color:var(--muted)}
+.lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lang button{border:0;background:var(--surface);color:var(--muted);font:600 13px var(--body);padding:7px 12px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+@media (max-width:760px){.two{grid-template-columns:1fr}.list{max-height:220px}h1 small{display:block;margin:4px 0 0}}
+@media (prefers-reduced-motion:no-preference){.btn,.chip,nav button{transition:background .12s}}
+[hidden]{display:none!important}
+.who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.hr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sync{font-size:12px;color:var(--muted)}.sync.bad{color:var(--crit);font-weight:600}
+#auth{max-width:400px;margin:10vh auto;padding:0 16px}
+#auth .card{gap:10px}#auth input{width:100%}#auth .lnk{background:none;border:0;color:var(--accent);font:600 14px var(--body);cursor:pointer;padding:4px 0;justify-self:start}
+#auth .err{color:var(--crit);min-height:1.2em;margin:0;font-size:14px}#auth .ok{color:var(--accent);margin:0;font-size:14px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;z-index:20;max-width:90vw}
+#teamRoot.ta{--ta-accent:var(--accent);--ta-accent-ink:var(--accent-ink);--ta-ink:var(--ink);--ta-muted:var(--muted);--ta-line:var(--line);--ta-soft:var(--soft);--ta-bg:var(--surface);font-family:var(--body);max-width:none}
+#teamRoot.ta h1{font:600 18px/1.2 var(--display)}
+</style>
+<link rel="stylesheet" href="team.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<script src="team.js"></script>
+</head>
+<body>
+<header>
+  <h1>Bready Forecast<small id="sub"></small></h1>
+  <div class="hr"><div class="who" id="who" hidden></div>
+  <div class="lang" role="group" aria-label="Language">
+    <button id="lang-tr" data-act="lang" data-v="tr">TR</button>
+    <button id="lang-en" data-act="lang" data-v="en">EN</button>
+  </div></div>
+</header>
+<div id="auth"></div>
+<nav id="nav" hidden><div id="tabs"></div></nav>
+<main id="app"></main>
+<script>
+"use strict";
+const KEY='breadyForecast.v1';
+const U={g:1,kg:1000,oz:28.3495,ml:1,L:1000,pc:1,sc_purple:21.26,sc_red:37.8,sc_green:75.6,sc_ivory:92.14,sc_grey:113.4};
+const UL={sc_purple:'Purple scoop (¾ oz)',sc_red:'Red scoop (1⅓ oz)',sc_green:'Green scoop (2⅔ oz)',sc_ivory:'Ivory scoop (3¼ oz)',sc_grey:'Grey scoop (4 oz)'};
+const CATS=['protein','cheese','egg','bread','other'];
+const GROUPS=['Brunch','Pancakes','Pizza','Salads','Plates','Sandwiches','Minis','Pragel','Pasta','Soups','Deli','Sides','Modifiers'];
+const T={
+ team:['Team','Ekip'],noPerm:['You do not have permission for this.','Bunun için yetkin yok.'],
+ signIn:['Sign in','Giriş yap'],email:['Email','E-posta'],password:['Password','Şifre'],forgot:['Forgot your password?','Şifremi unuttum'],
+ resetSent:['If this address is on the team, a reset link is on its way.','Bu adres ekipteyse şifre sıfırlama bağlantısı gönderildi.'],
+ badLogin:['Email or password is wrong.','E-posta ya da şifre yanlış.'],setPw:['Choose your password','Şifreni belirle'],newPw:['New password (at least 8 characters)','Yeni şifre (en az 8 karakter)'],
+ savePw:['Save and continue','Kaydet ve devam et'],signOut:['Sign out','Çıkış'],loading:['Loading…','Yükleniyor…'],
+ noAccess:['This account has no access yet. Ask an admin to give you access.','Bu hesabın henüz yetkisi yok. Bir yöneticiden yetki iste.'],
+ saved:['Saved','Kaydedildi'],saving:['Saving…','Kaydediliyor…'],saveErr:['Could not save, reloaded the latest data:','Kaydedilemedi, en güncel veri yeniden yüklendi:'],
+ loadErr:['Could not load the data:','Veri yüklenemedi:'],emptyDb:['The database is empty and this account cannot fill it.','Veritabanı boş ve bu hesap doldurmaya yetkili değil.'],
+ seeded:['Starting recipes and ingredients were saved to the database.','Başlangıç reçeteleri ve malzemeleri veritabanına kaydedildi.'],
+ sub:['Sales → prep list → order list','Satış → prep listesi → sipariş listesi'],
+ plan:['Plan','Plan'],sales:['Sales','Satış'],recipes:['Recipes','Tarifler'],ings:['Ingredients','Malzemeler'],cal:['Special days','Özel günler'],
+ from:['From','Başlangıç'],to:['To','Bitiş'],buffer:['Buffer %','Buffer %'],show:['Show','Göster'],
+ bread:['Bread','Ekmek'],breadN:['Bread to buy','Alınacak ekmek'],
+ protein:['Protein','Protein'],cheese:['Cheese','Peynir'],egg:['Egg','Yumurta'],other:['Other','Diğer'],
+ sample:['These are sample sales so you can see the app working. Clear them before entering real numbers.','Bunlar uygulamayı görebilmen için örnek satışlar. Gerçek rakamları girmeden önce temizle.'],
+ clearSample:['Clear sample sales','Örnek satışları temizle'],
+ portions:['Portions forecast','Tahmini porsiyon'],protKg:['Protein to buy','Alınacak protein'],cheKg:['Cheese to buy','Alınacak peynir'],eggPc:['Eggs to buy','Alınacak yumurta'],cost:['Order cost','Sipariş maliyeti'],
+ noPrice:['items without a price','ürünün fiyatı yok'],
+ fc:['Forecast','Tahmin'],fcHint:['Each day is the average of the same weekday in the 4 weeks before it. For example Wed 25/11 uses 18/11, 11/11, 4/11 and 28/10. The dates used are under each day. A struck-through date has no sales entered or is a special day left out. Type over any number to adjust it.','Her gün, önceki 4 haftanın aynı gününün ortalamasıdır. Örneğin 25/11 Çarşamba için 18/11, 11/11, 4/11 ve 28/10 kullanılır. Kullanılan tarihler her günün altında yazar. Üstü çizili tarih, satış girilmemiş ya da ortalamaya katılmayan özel gün demektir. İstediğin rakamın üzerine yazıp değiştirebilirsin.'],noData:['No sales entered','Satış girilmemiş'],
+ reset:['Reset adjustments','Değişiklikleri sıfırla'],item:['Item','Ürün'],total:['Total','Toplam'],
+ prep:['Prep list','Prep listesi'],prepHint:['How much of each house-made component to produce for this period, after what is already in the fridge.','Bu dönem için her ev yapımı üründen ne kadar üretilmesi gerektiği. Dolaptaki stok düşülmüş halidir.'],
+ comp:['Component','Ürün'],need:['Needed','Gerekli'],withBuf:['With buffer','Buffer ile'],stock:['In stock','Stokta'],produce:['Produce','Üret'],batches:['Batches','Batch'],
+ order:['Order list','Sipariş listesi'],orderHint:['Needed = what the forecast uses. Order = what to buy after stock, rounded up to full packs.','Gerekli = tahminin kullanacağı miktar. Sipariş = stok düşüldükten sonra alınacak miktar, tam pakete yuvarlanır.'],
+ ing:['Ingredient','Malzeme'],net:['Net to buy','Net alınacak'],pack:['Pack','Paket'],packs:['Packs','Paket adedi'],surplus:['Surplus','Fazla'],supplier:['Supplier','Tedarikçi'],bufPct:['Buffer %','Buffer %'],
+ nothing:['Nothing needed for this period.','Bu dönem için gereken bir şey yok.'],
+ flags:['Special days in this plan','Bu plandaki özel günler'],inFc:['in forecast','tahmin döneminde'],inHist:['in history','geçmişte'],
+ include:['Count as normal','Normal say'],exclude:['Leave out of average','Ortalamaya katma'],adjust:['Adjust by factor','Katsayıyla düzelt'],closed:['Closed','Kapalı'],
+ date:['Date','Tarih'],qty:['Qty','Adet'],daySales:['Sales for the day','Günün satışları'],dayTotal:['portions entered','porsiyon girildi'],
+ importT:['Paste sales','Satış yapıştır'],importHint:['One line per sale: date, item name, quantity. Example: 2026-11-12, Avocado Toast, 14','Her satır: tarih, ürün adı, adet. Örnek: 2026-11-12, Avocado Toast, 14'],importBtn:['Import','İçe aktar'],
+ imported:['lines imported','satır aktarıldı'],skipped:['skipped','atlandı'],
+ trends:['Trends','Trendler'],trendHint:['Average per weekday over the last 4 weeks, and the last 4 weeks against the 4 before.','Son 4 haftanın gün bazında ortalaması ve son 4 haftanın önceki 4 haftayla karşılaştırması.'],
+ last4:['Last 4 wk','Son 4 hf'],prev4:['Prev 4 wk','Önceki 4 hf'],chg:['Change','Değişim'],
+ menu:['Menu items','Menü ürünleri'],preps:['House-made','Ev yapımı'],name:['Name','İsim'],group:['Group','Grup'],price:['Selling price $','Satış fiyatı $'],
+ yield:['Batch yield (g)','Batch yield (g)'],stockG:['In stock (g)','Stokta (g)'],note:['Note','Not'],line:['Ingredient or component','Malzeme veya alt tarif'],amount:['Amount','Miktar'],unit:['Unit','Birim'],
+ addLine:['Add line','Satır ekle'],newMenu:['New menu item','Yeni menü ürünü'],newPrep:['New house-made recipe','Yeni ev yapımı tarif'],del:['Delete','Sil'],delSure:['Tap again to delete','Silmek için tekrar bas'],
+ costServ:['Tracked items per serving','Porsiyon başı takip edilen ürünler'],costNote:['Protein, cheese, egg and bread only. Vegetables, sauces, oils and garnish are not counted, so this is not the food cost of the dish.','Sadece protein, peynir, yumurta ve ekmek. Sebze, sos, yağ ve garnitür sayılmıyor, yani bu yemeğin food cost\'u değildir.'],costBatch:['Batch cost','Batch maliyeti'],foodCost:['Food cost','Food cost'],partial:['partial: some prices missing','eksik: bazı fiyatlar girilmemiş'],
+ cat:['Category','Kategori'],packSize:['Pack size','Paket boyutu'],packPrice:['Pack price $','Paket fiyatı $'],unitCost:['Unit cost','Birim maliyet'],addIng:['Add ingredient','Malzeme ekle'],
+ ingHint:['Pack size is in the same unit as the ingredient: grams, or pieces for eggs and steaks.','Paket boyutu malzemenin birimiyle aynıdır: gram, yumurta ve steak için adet.'],
+ calHint:['Holidays are flagged automatically and left out of the average unless you change them. Add your own promotions, events, closures and unusual days here.','Tatiller otomatik işaretlenir ve sen değiştirmedikçe ortalamaya katılmaz. Promosyon, etkinlik, kapalı gün ve olağandışı günleri buradan ekle.'],
+ label:['Label','Etiket'],mode:['How to treat it','Nasıl sayılsın'],factor:['Factor','Katsayı'],add:['Add','Ekle'],auto:['holiday','tatil'],mine:['yours','senin'],remove:['Remove','Kaldır'],
+ factorHint:['Factor 1.5 means 50% busier than a normal day, 0.7 means 30% quieter.','1.5 katsayısı normal günden %50 yoğun, 0.7 ise %30 sakin demektir.'],
+ next:['Next','Sonraki'],openAll:['Open all','Hepsini aç'],closeAll:['Close all','Hepsini kapat'],detailOn:['Show details','Detayları göster'],detailOff:['Hide details','Detayları gizle'],
+ use:['Usage','Kullanım'],useT:['What we used','Neyden ne kadar kullandık'],useHint:['Calculated from the sales you entered and the recipes. Pick one day or a date range.','Girdiğin satışlardan ve tariflerden hesaplanır. Tek gün ya da tarih aralığı seçebilirsin.'],used:['Used','Kullanılan'],useCost:['Cost','Maliyet'],seeUse:['See what this day used','Bu günün kullanımını gör'],usePrep:['House-made components used','Kullanılan ev yapımı ürünler'],sold:['Portions sold','Satılan porsiyon'],useTot:['Tracked items used','Kullanılan takip edilen ürünler'],noSales:['No sales entered for these dates.','Bu tarihlerde girilmiş satış yok.'],
+ impT:['Upload Square report','Square raporu yükle'],impHint:['Choose the PDF or CSV file exported from Square. Nothing is saved until you check the matches below and confirm.','Square\'den indirdiğin PDF ya da CSV dosyasını seç. Aşağıdaki eşleşmeleri kontrol edip onaylayana kadar hiçbir şey kaydedilmez.'],
+ impErr:['This file could not be read. It needs an item name column and a quantity column.','Bu dosya okunamadı. Ürün adı ve adet sütunu olmalı.'],impAll:['Items in file','Dosyadaki toplam adet'],impOk:['Counted as kitchen items','Mutfak ürünü olarak sayılan'],impIgn:['Not counted','Sayılmayan'],impWait:['Waiting for your decision','Kararını bekleyen'],
+ impRowsT:['Kitchen rows in the file','Dosyadaki mutfak satırları'],sq:['Name in Square','Square\'deki ad'],appItem:['Item in the app','Uygulamadaki ürün'],choose:['Choose','Seç'],skip:['Do not count','Sayma'],full:['Full portion','Tam porsiyon'],halfP:['Half portion','Yarım porsiyon'],
+ impAuto:['rows from non-kitchen categories were left out automatically','satır mutfak dışı kategorilerden olduğu için otomatik sayılmadı'],ignoreRest:['Do not count the remaining ones','Kalanların hepsini sayma'],impUse:['Show what this file used','Bu dosyanın kullanımını göster'],impSave:['Save to sales','Satışlara kaydet'],impClose:['Close','Kapat'],
+ impNeed:['Decide on every waiting row first.','Önce bekleyen her satır için karar ver.'],impNoDay:['This file is a total for several days, so it cannot be saved day by day. You can still see what it used.','Bu dosya birkaç günün toplamı olduğu için gün gün kaydedilemez. Kullanımını yine de görebilirsin.'],impSaved:['days saved from the file','gün dosyadan kaydedildi'],
+ useFileB:['Showing the uploaded file, not saved sales','Yüklenen dosya gösteriliyor, kayıtlı satışlar değil'],useFileX:['Back to saved sales','Kayıtlı satışlara dön'],
+ settings:['Settings','Ayarlar'],back:['Back','Geri'],
+ rangeT:['Sales in a date range','Tarih aralığındaki satışlar'],rangeHint:['Pick a start and end date to see total sales per item.','Ürün başına toplam satışları görmek için başlangıç ve bitiş tarihi seç.'],rangeDays:['days with sales','satış girilmiş gün'],rangeUse:['See what this range used','Bu aralığın kullanımını gör'],
+ inDish:['Used in','Kullanıldığı yemekler'],portions2:['Portions','Porsiyon'],share:['Share','Pay'],tapHint:['Tap a row to see which dishes used it.','Bir satıra dokununca hangi yemeklerde kullanıldığını görürsün.'],
+ rangeEdit:['To enter or change numbers, pick the same day for From and To.','Rakam girmek ya da değiştirmek için Başlangıç ve Bitiş\'e aynı günü seç.'],
+ impModHint:['Modifier report','Modifier raporu'],
+ chkOk:['Every category total in the file matches the rows read','Dosyadaki tüm kategori toplamları okunan satırlarla tutuyor'],chkBad:['Totals do not match, do not save until checked:','Toplamlar tutmuyor, kontrol etmeden kaydetme:'],pdfWait:['Reading the PDF…','PDF okunuyor…'],pdfErr:['The PDF could not be read. Check your internet connection and try again.','PDF okunamadı. İnternet bağlantını kontrol edip tekrar dene.'],
+ selDel:['Clear selected','Seçilenleri sil'],dayClear:['Clear this day','Bu günü temizle'],allClear:['Clear all sales','Tüm satışları sil'],pick:['Select','Seç'],
+ resetAll:['Reset everything to starting data','Her şeyi başlangıç verisine döndür'],check:['check portion','porsiyonu kontrol et']
+};
+const DAYS={en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],tr:['Paz','Pzt','Sal','Çar','Per','Cum','Cmt']};
+let S,tab='sales',setTab='recipes',openX={},sFrom,sTo,selRec='croben',salesDate,cats={protein:true,cheese:true,egg:true,bread:true,other:false},msg='',delArm='',picked={},planStep='fc',openG={},detail=false,imp=null,useFile=null;
+const t=k=>T[k]?T[k][S.lang==='tr'?1:0]:k;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=s=>{const a=s.split('-').map(Number);return new Date(a[0],a[1]-1,a[2])};
+const addD=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return fmt(d)};
+const dlabel=s=>{const d=parse(s);return DAYS[S.lang][d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)};
+const r1=n=>Math.round(n*10)/10;
+function q(n,unit){if(unit==='pc')return r1(n).toLocaleString()+' pc';if(Math.abs(n)>=1000)return (n/1000).toFixed(2)+' kg';return Math.round(n).toLocaleString()+' g'}
+const money=n=>'$'+n.toFixed(2);
+
+/* ---------- starting data ---------- */
+function seed(){const start=fmt(new Date());return {lang:'tr',ings:{},recs:{},sales:{},tags:{},overrides:{},plan:{start,end:addD(start,3),buffer:10,ingBuffer:{}},map:{},sample:false,v:22}}
+/* Recipes, ingredients and prices live in the database only (Supabase), never in this public file.
+   Data changes from version 23 on go here as addV23(X){if(X.v>=23)return X; ...; X.v=23; return X} and into migrate(). */
+function addBread(X){return X}
+function addBread2(X){return X}
+function addBread3(X){return X}
+function addV5(X){return X}
+function addV6(X){return X}
+function addV7(X){return X}
+function addV8(X){return X}
+function addV9(X){return X}
+function addV10(X){return X}
+function addV11(X){return X}
+function addV12(X){return X}
+function addV13(X){return X}
+function addV14(X){return X}
+function addV15(X){return X}
+function addV16(X){return X}
+function addV17(X){return X}
+function addV18(X){return X}
+function addV19(X){return X}
+function addV20(X){return X}
+function addV21(X){return X}
+function addV22(X){return X}
+
+/* ---------- special days ---------- */
+const hcache={};
+function holidays(y){if(hcache[y])return hcache[y];const h={},nth=(m,wd,n)=>{const d=new Date(y,m,1);d.setDate(1+((wd-d.getDay()+7)%7)+7*(n-1));return fmt(d)};
+ const a=y%19,b=Math.floor(y/100),c=y%100,d0=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),hh=(19*a+b-d0-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-hh-k)%7,m=Math.floor((a+11*hh+22*l)/451),mo=Math.floor((hh+l-7*m+114)/31)-1,da=((hh+l-7*m+114)%31)+1;
+ const easter=fmt(new Date(y,mo,da)),vic=new Date(y,4,24);vic.setDate(24-((vic.getDay()+6)%7));
+ h[y+'-01-01']="New Year's Day";h[y+'-02-14']="Valentine's Day";h[nth(1,1,3)]='Family Day';h[addD(easter,-2)]='Good Friday';h[easter]='Easter Sunday';
+ h[nth(4,0,2)]="Mother's Day";h[fmt(vic)]='Victoria Day';h[nth(5,0,3)]="Father's Day";h[y+'-07-01']='Canada Day';h[nth(7,1,1)]='Civic Holiday';
+ h[nth(8,1,1)]='Labour Day';h[nth(9,1,2)]='Thanksgiving';h[y+'-10-31']='Halloween';h[y+'-12-24']='Christmas Eve';h[y+'-12-25']='Christmas Day';h[y+'-12-26']='Boxing Day';h[y+'-12-31']="New Year's Eve";
+ return hcache[y]=h}
+const holiday=d=>holidays(+d.slice(0,4))[d]||null;
+function special(d){const tg=S.tags[d],h=holiday(d);if(!tg&&!h)return null;return {label:(tg&&tg.label)||h,mode:tg?tg.mode:'exclude',factor:tg&&tg.factor?tg.factor:1,auto:!!h,own:!!tg}}
+
+/* ---------- forecast and requirements ---------- */
+const menuIds=()=>Object.keys(S.recs).filter(k=>S.recs[k].type==='menu').sort((a,b)=>GROUPS.indexOf(S.recs[a].group)-GROUPS.indexOf(S.recs[b].group));
+const prepIds=()=>Object.keys(S.recs).filter(k=>S.recs[k].type==='prep');
+function fcExplain(d){const L=srcDates(d).map(x=>x.lbl),f=dlabel(d);return S.lang==='tr'?`Her gün, önceki 4 haftanın aynı gününün ortalamasıdır. Örneğin ${f} için ${L[0]}, ${L[1]}, ${L[2]} ve ${L[3]} günlerinin satışları kullanılır. Satış girilmemiş günler ve ortalamaya katılmayan özel günler hesaba girmez, ortalama kalan günlerden alınır. İstediğin rakamın üzerine yazıp değiştirebilirsin, değiştirilen hücreler renkli görünür.`:`Each day is the average of the same weekday in the 4 weeks before it. For example ${f} uses the sales of ${L[0]}, ${L[1]}, ${L[2]} and ${L[3]}. Days with no sales entered and special days left out are skipped, and the average is taken from the rest. Type over any number to adjust it; adjusted cells are highlighted.`}
+function srcDates(d){const o=[];for(let k=1;k<=4;k++){const h=addD(d,-7*k),sp=special(h),day=S.sales[h],dd=parse(h);let ok=true,why='';if(!day){ok=false;why=t('noData')}else if(sp&&(sp.mode==='exclude'||sp.mode==='closed')){ok=false;why=sp.label}o.push({lbl:dd.getDate()+'/'+(dd.getMonth()+1),ok,why:why||h})}return o}
+function rawFc(d,id){const v=[];for(let k=1;k<=4;k++){const h=addD(d,-7*k),day=S.sales[h];if(!day)continue;const sp=special(h);let x=day[id]||0;
+  if(sp){if(sp.mode==='exclude'||sp.mode==='closed')continue;if(sp.mode==='adjust'&&sp.factor>0)x=x/sp.factor}v.push(x)}
+ let f=v.length?v.reduce((a,b)=>a+b,0)/v.length:0;const sp=special(d);if(sp){if(sp.mode==='closed')f=0;else if(sp.mode==='adjust')f*=sp.factor}return r1(f)}
+function fc(d,id){const o=S.overrides[d+'|'+id];return o!=null?o:rawFc(d,id)}
+function range(){const out=[];let d=S.plan.start;if(S.plan.end<d)S.plan.end=d;for(let i=0;i<31&&d<=S.plan.end;i++){out.push(d);d=addD(d,1)}return out}
+const baseAmt=l=>l.qty*(U[l.unit]||1);
+function topo(){const seen={},out=[];const visit=id=>{if(seen[id])return;seen[id]=1;const r=S.recs[id];if(!r)return;r.lines.forEach(l=>{if(l.ref[0]==='r')visit(l.ref.slice(2))});out.push(id)};prepIds().forEach(visit);return out.reverse()}
+function explode(dem,useBuf,noStock){const gb=useBuf?S.plan.buffer/100:0,ingD={},ingS={},sub={},prod={};
+ const put=(l,a)=>{const id=l.ref.slice(2);if(l.ref[0]==='i')return id;sub[id]=(sub[id]||0)+a;return null};
+ for(const rid in dem){const r=S.recs[rid];if(!r||!dem[rid])continue;r.lines.forEach(l=>{const a=dem[rid]*baseAmt(l),id=put(l,a);if(id)ingD[id]=(ingD[id]||0)+a})}
+ topo().forEach(rid=>{const r=S.recs[rid],need=sub[rid]||0;if(r.type!=='prep')return;const wb=need*(1+gb),p=noStock?wb:Math.max(0,wb-(r.stock||0));prod[rid]={need,wb,produce:p};
+  if(p<=0||!(r.yield>0))return;const f=p/r.yield;r.lines.forEach(l=>{const a=f*baseAmt(l),id=put(l,a);if(id)ingS[id]=(ingS[id]||0)+a})});
+ const ing={};new Set([...Object.keys(ingD),...Object.keys(ingS)]).forEach(id=>{const o=S.plan.ingBuffer[id],b=useBuf?(o!=null?o/100:gb):0;ing[id]=(ingD[id]||0)*(1+b)+(ingS[id]||0)});
+ return {ing,prod}}
+function unitCost(id){const i=S.ings[id];return i&&i.packSize>0&&i.packPrice>0?i.packPrice/i.packSize:null}
+function recCost(id,depth){const r=S.recs[id];let c=0,miss=false;if(!r||(depth||0)>8)return {c:0,miss:true};
+ r.lines.forEach(l=>{const rid=l.ref.slice(2),a=baseAmt(l);if(l.ref[0]==='i'){const u=unitCost(rid),ing=S.ings[rid];if(u==null){if(ing&&ing.cat!=='other')miss=true}else c+=u*a}
+  else{const s=S.recs[rid],x=recCost(rid,(depth||0)+1);if(s&&s.yield>0)c+=x.c/s.yield*a;if(x.miss)miss=true}});return {c,miss}}
+
+/* ---------- views ---------- */
+function viewPlan(){const days=range(),ids=menuIds(),dem={};let portions=0;
+ ids.forEach(id=>{dem[id]=days.reduce((a,d)=>a+fc(d,id),0);portions+=dem[id]});
+ const A=explode(dem,false),Bf=explode(dem,true);
+ const flags={};days.forEach(d=>{const sp=special(d);if(sp)flags[d]={sp,where:'inFc'};for(let k=1;k<=4;k++){const h=addD(d,-7*k),s2=special(h);if(s2&&S.sales[h]&&!flags[h])flags[h]={sp:s2,where:'inHist'}}});
+ let cost=0,noP=0,pk=0,ck=0,eg=0;const rows=Object.keys(Bf.ing).map(id=>{const i=S.ings[id];if(!i)return null;const need=A.ing[id]||0,wb=Bf.ing[id],net=Math.max(0,wb-(i.stock||0));
+  const packs=i.packSize>0?Math.ceil(net/i.packSize-1e-9):null,sur=packs!=null?packs*i.packSize-net:null,c=packs!=null&&i.packPrice>0?packs*i.packPrice:null;
+  if(i.cat!=='other'){if(c!=null)cost+=c;else if(net>0)noP++}if(i.cat==='protein'&&i.unit==='g')pk+=net;if(i.cat==='cheese')ck+=net;if(i.cat==='egg'&&i.unit==='pc')eg+=net;
+  return {id,i,need,wb,net,packs,sur,c}}).filter(r=>r&&cats[r.i.cat]&&r.wb>0.001).sort((a,b)=>CATS.indexOf(a.i.cat)-CATS.indexOf(b.i.cat)||a.i.name.localeCompare(b.i.name));
+ let h='';
+ if(S.sample)h+=`<div class="banner"><span>${t('sample')}</span><button class="btn sm" data-act="clearSample">${t('clearSample')}</button></div>`;
+ h+=`<section class="card"><div class="row">
+  <label class="f">${t('from')}<input type="date" id="p-start" data-act="plan" data-k="start" value="${S.plan.start}"></label>
+  <label class="f">${t('to')}<input type="date" id="p-end" data-act="plan" data-k="end" value="${S.plan.end}"></label>
+  <label class="f">${t('buffer')}<input type="number" id="p-buf" min="0" max="100" step="1" data-act="plan" data-k="buffer" value="${S.plan.buffer}"></label>
+  <div class="f" style="display:grid;gap:4px"><span class="hint" style="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em">${t('show')}</span><div class="chips">${CATS.map(c=>`<button class="chip" aria-pressed="${cats[c]}" data-act="cat" data-v="${c}">${t(c)}</button>`).join('')}</div></div></div></section>`;
+ h+=`<div class="tiles"><div class="tile"><span>${t('portions')}</span><b>${Math.round(portions).toLocaleString()}</b></div>
+  <div class="tile"><span>${t('protKg')}</span><b>${(pk/1000).toFixed(1)} kg</b></div><div class="tile"><span>${t('cheKg')}</span><b>${(ck/1000).toFixed(1)} kg</b></div>
+  <div class="tile"><span>${t('eggPc')}</span><b>${Math.ceil(eg).toLocaleString()}</b></div>
+  <div class="tile"><span>${t('cost')}</span><b>${money(cost)}</b>${noP?`<span class="pill warn" style="margin-top:4px">${noP} ${t('noPrice')}</span>`:''}</div></div>`;
+ const fk=Object.keys(flags).sort();
+ if(fk.length)h+=`<section class="card"><h2>${t('flags')}</h2><div class="scroll"><table><tbody>${fk.map(d=>{const f=flags[d];return `<tr><td><b>${dlabel(d)}</b> ${esc(f.sp.label)} <span class="pill ${f.where==='inFc'?'warn':''}">${t(f.where)}</span></td><td>${modeSel(d,f.sp)}</td></tr>`}).join('')}</tbody></table></div><p class="hint">${t('factorHint')}</p></section>`;
+ h+=`<div class="steps">${['fc','prep','order'].map((x,n)=>`<button data-act="step" data-v="${x}" aria-current="${planStep===x}"><i>${n+1}</i>${t(x)}</button>`).join('')}</div>`;
+ if(planStep==='fc'){const allOpen=GROUPS.every(g=>openG[g]);
+  h+=`<section class="card"><div class="head"><h2>${t('fc')}</h2><div class="row"><button class="btn sm" data-act="grpAll">${allOpen?t('closeAll'):t('openAll')}</button><button class="btn sm" data-act="resetOv">${t('reset')}</button></div></div><p class="hint">${fcExplain(days[0])}</p><div class="scroll"><table><thead><tr><th>${t('item')}</th>${days.map(d=>`<th>${dlabel(d)}${special(d)?' <span class="pill warn">!</span>':''}</th>`).join('')}<th>${t('total')}</th></tr></thead><tbody>`;
+  GROUPS.forEach(g=>{const gi=ids.filter(id=>S.recs[id].group===g);if(!gi.length)return;
+   h+=`<tr class="grp tap" data-act="grp" data-v="${g}"><td>${openG[g]?'▾':'▸'} ${esc(g)} <span class="muted">(${gi.length})</span></td>${days.map(d=>`<td>${Math.round(gi.reduce((a,id)=>a+fc(d,id),0))}</td>`).join('')}<td>${Math.round(gi.reduce((a,id)=>a+dem[id],0))}</td></tr>`;
+   if(openG[g])gi.forEach(id=>{const r=S.recs[id];h+=`<tr><td>${esc(r.name)}</td>${days.map(d=>{const o=S.overrides[d+'|'+id]!=null;return `<td><input type="number" min="0" step="1" class="${o?'ov':''}" aria-label="${esc(r.name)} ${d}" data-act="ov" data-d="${d}" data-r="${id}" value="${fc(d,id)}"></td>`}).join('')}<td class="num"><b>${r1(dem[id])}</b></td></tr>`})});
+  h+=`</tbody></table></div><div class="row"><button class="btn pri" data-act="step" data-v="prep">${t('next')}: ${t('prep')} →</button></div></section>`}
+ else if(planStep==='prep'){const pr=Object.keys(Bf.prod).filter(id=>Bf.prod[id].need>0.001).sort((a,b)=>S.recs[a].name.localeCompare(S.recs[b].name));
+  h+=`<section class="card"><h2>${t('prep')}</h2><p class="hint">${t('prepHint')}</p>${pr.length?`<div class="scroll"><table><thead><tr><th>${t('comp')}</th><th>${t('withBuf')}</th><th>${t('stockG')}</th><th>${t('produce')}</th><th>${t('batches')}</th></tr></thead><tbody>${pr.map(id=>{const r=S.recs[id],p=Bf.prod[id];return `<tr><td>${esc(r.name)}</td><td>${q(p.wb,'g')}</td><td><input type="number" min="0" step="50" aria-label="${esc(r.name)} stock" data-act="pstock" data-r="${id}" value="${r.stock||0}"></td><td class="num"><b>${q(p.produce,'g')}</b></td><td>${r.yield>0?(p.produce/r.yield).toFixed(2)+' × '+q(r.yield,'g'):'—'}</td></tr>`}).join('')}</tbody></table></div>`:`<p class="muted">${t('nothing')}</p>`}<div class="row"><button class="btn pri" data-act="step" data-v="order">${t('next')}: ${t('order')} →</button></div></section>`}
+ else{const D=detail;h+=`<section class="card"><div class="head"><h2>${t('order')}</h2><button class="btn sm" data-act="detail">${D?t('detailOff'):t('detailOn')}</button></div><p class="hint">${t('orderHint')}</p>`;
+  if(rows.length){h+=`<div class="scroll"><table><thead><tr><th>${t('ing')}</th>${D?`<th>${t('need')}</th><th>${t('bufPct')}</th><th>${t('withBuf')}</th>`:''}<th>${t('stock')}</th><th>${t('net')}</th>${D?`<th>${t('pack')}</th>`:''}<th>${t('packs')}</th>${D?`<th>${t('surplus')}</th>`:''}<th>${t('cost')}</th></tr></thead><tbody>`;
+   let c0='';rows.forEach(r=>{if(r.i.cat!==c0){c0=r.i.cat;h+=`<tr class="grp"><td colspan="${D?10:5}">${t(c0)}</td></tr>`}const ob=S.plan.ingBuffer[r.id];
+    h+=`<tr><td>${esc(r.i.name)}${r.i.supplier?`<br><span class="muted" style="font-size:13px">${esc(r.i.supplier)}</span>`:''}</td>${D?`<td>${q(r.need,r.i.unit)}</td><td><input type="number" min="0" max="100" step="1" class="${ob!=null?'ov':''}" aria-label="${esc(r.i.name)} buffer" data-act="ibuf" data-i="${r.id}" value="${ob!=null?ob:S.plan.buffer}"></td><td>${q(r.wb,r.i.unit)}</td>`:''}
+    <td><input type="number" min="0" step="${r.i.unit==='pc'?1:100}" aria-label="${esc(r.i.name)} stock" data-act="istock" data-i="${r.id}" value="${r.i.stock||0}"></td>
+    <td class="num"><b>${q(r.net,r.i.unit)}</b></td>${D?`<td>${r.i.packSize?q(r.i.packSize,r.i.unit):'<span class="pill warn">?</span>'}</td>`:''}<td class="num"><b>${r.packs!=null?r.packs:'—'}</b></td>${D?`<td>${r.sur!=null?q(r.sur,r.i.unit):'—'}</td>`:''}<td>${r.c!=null?money(r.c):'—'}</td></tr>`});
+   h+=`</tbody></table></div>`}else h+=`<p class="muted">${t('nothing')}</p>`;
+  h+=`</section>`}
+ return h}
+function modeSel(d,sp){return `<select aria-label="${t('mode')}" data-act="tagMode" data-d="${d}">${['include','exclude','adjust','closed'].map(m=>`<option value="${m}"${sp.mode===m?' selected':''}>${t(m)}</option>`).join('')}</select>${sp.mode==='adjust'?` <input type="number" min="0.1" step="0.1" aria-label="${t('factor')}" data-act="tagFactor" data-d="${d}" value="${sp.factor}">`:''}`}
+
+function viewSales(){if(sTo<sFrom)sTo=sFrom;if(sFrom===sTo)salesDate=sFrom;const d=salesDate,ids=menuIds(),day=S.sales[d]||{},tot=ids.reduce((a,id)=>a+(day[id]||0),0),sp=special(d),today=fmt(new Date());
+ let h=S.sample?`<div class="banner"><span>${t('sample')}</span><button class="btn sm" data-act="clearSample">${t('clearSample')}</button></div>`:'';
+ h+=`<section class="card"><h2>${t('impT')}</h2><p class="hint">${t('impHint')}</p><input type="file" id="imp-file" accept=".csv,text/csv,.pdf,application/pdf" data-act="impFile" aria-label="${t('impT')}">${msg&&!imp?`<p class="muted">${esc(msg)}</p>`:''}${imp?impView():''}</section>`;
+ const multi=sFrom!==sTo,dates=[];{let x=sFrom;for(let i=0;i<370&&x<=sTo;i++){dates.push(x);x=addD(x,1)}}
+ const tt={};let days=0;dates.forEach(x=>{const dy=S.sales[x];if(dy&&Object.keys(dy).length){days++;for(const k in dy)tt[k]=(tt[k]||0)+dy[k]}});const tot2=r1(Object.values(tt).reduce((a,b)=>a+b,0));
+ h+=`<section class="card"><div class="head"><h2>${multi?t('rangeT'):t('daySales')}</h2><span class="pill">${(multi?tot2:tot).toLocaleString()} ${t('dayTotal')}${multi?' · '+days+' '+t('rangeDays'):''}</span></div><div class="row">
+  <button class="btn" data-act="sday" data-v="-1" aria-label="previous">‹</button><label class="f">${t('from')}<input type="date" id="s-from" data-act="srange" data-k="from" value="${sFrom}"></label><label class="f">${t('to')}<input type="date" id="s-to" data-act="srange" data-k="to" value="${sTo}"></label><button class="btn" data-act="sday" data-v="1" aria-label="next">›</button>
+  <span class="muted">${multi?dlabel(sFrom)+' → '+dlabel(sTo):dlabel(d)}${!multi&&sp?` · <span class="pill warn">${esc(sp.label)}</span>`:''}</span></div>`;
+ if(multi){h+=`<p class="hint">${t('rangeEdit')}</p>`;if(tot2){h+=`<div class="scroll"><table><thead><tr><th>${t('item')}</th><th>${t('qty')}</th></tr></thead><tbody>`;let g2='';ids.filter(id=>tt[id]).forEach(id=>{const r=S.recs[id];if(r.group!==g2){g2=r.group;h+=`<tr class="grp"><td colspan="2">${esc(g2)}</td></tr>`}h+=`<tr><td>${esc(r.name)}</td><td class="num"><b>${r1(tt[id]).toLocaleString()}</b></td></tr>`});h+=`</tbody></table></div>`}else h+=`<p class="muted">${t('noSales')}</p>`;
+  h+=`<div class="row"><button class="btn pri" data-act="rangeUse">${t('rangeUse')} →</button></div></section>`}
+ else{h+=`<div class="scroll"><table><thead><tr><th>${t('item')}</th><th>${t('qty')}</th><th><input type="checkbox" id="pick-all" aria-label="${t('pick')}" data-act="pickAll"${ids.every(i=>picked[i])?' checked':''}></th></tr></thead><tbody>`;
+ let g='';const np=ids.filter(i=>picked[i]).length;ids.forEach(id=>{const r=S.recs[id];if(r.group!==g){g=r.group;h+=`<tr class="grp"><td colspan="3">${esc(g)}</td></tr>`}
+  h+=`<tr><td>${esc(r.name)}</td><td><span class="stp"><button data-act="dec" data-r="${id}" aria-label="-1 ${esc(r.name)}">−</button><input type="number" min="0" step="1" inputmode="numeric" aria-label="${esc(r.name)}" data-act="sale" data-r="${id}" value="${day[id]!=null?day[id]:''}"><button data-act="inc" data-r="${id}" aria-label="+1 ${esc(r.name)}">+</button></span></td><td><input type="checkbox" aria-label="${t('pick')} ${esc(r.name)}" data-act="pick" data-r="${id}"${picked[id]?' checked':''}></td></tr>`});
+ h+=`</tbody></table></div><div class="row"><button class="btn" data-act="selDel"${np?'':' disabled'}>${t('selDel')}${np?' ('+np+')':''}</button><button class="btn" data-act="dayClear">${t('dayClear')}</button><button class="btn pri" data-act="seeUse">${t('seeUse')} →</button><button class="btn danger" data-act="allClear">${delArm==='sales'?t('delSure'):t('allClear')}</button></div></section>`}
+ h+=`<section class="card"><h2>${t('importT')}</h2><p class="hint">${t('importHint')}</p><textarea id="csv" aria-label="${t('importT')}"></textarea><div class="row"><button class="btn pri" data-act="import">${t('importBtn')}</button><span class="muted">${esc(msg)}</span></div></section>`;
+ h+=`<section class="card"><h2>${t('trends')}</h2><p class="hint">${t('trendHint')}</p><div class="scroll"><table><thead><tr><th>${t('item')}</th>${[1,2,3,4,5,6,0].map(w=>`<th>${DAYS[S.lang][w]}</th>`).join('')}<th>${t('last4')}</th><th>${t('prev4')}</th><th>${t('chg')}</th></tr></thead><tbody>`;
+ ids.forEach(id=>{const sum=[0,0,0,0,0,0,0],cnt=[0,0,0,0,0,0,0];let a=0,b=0;for(let n=1;n<=56;n++){const x=addD(today,-n),dy=S.sales[x];if(!dy)continue;const v=dy[id]||0;if(n<=28){a+=v;const w=parse(x).getDay();sum[w]+=v;cnt[w]++}else b+=v}
+  const ch=b>0?(a-b)/b*100:null;h+=`<tr><td>${esc(S.recs[id].name)}</td>${[1,2,3,4,5,6,0].map(w=>`<td>${cnt[w]?r1(sum[w]/cnt[w]):'—'}</td>`).join('')}<td class="num"><b>${a}</b></td><td>${b||'—'}</td><td>${ch==null?'—':`<span class="pill ${ch<-10?'crit':ch>10?'':'warn'}">${ch>0?'+':''}${Math.round(ch)}%</span>`}</td></tr>`});
+ return h+`</tbody></table></div></section>`}
+
+const KIT=new Set(['brunch','salads','sandwiches & bowls','plates','happy hour','sides','uncategorized','add protein','add-on','extra eggs','egg style','pizza slice type','ramekins']);
+const ALIAS={'bready french toast':'ft','banana & nutella pancakes':'pnut','fig and pear salad':'sfig','avocado & egg mini sandwich':'mavo','gouda mini sandwich':'mmj','smoked salmon mini sandwich':'msal',"grandma's meatball sandwich":'wmeat','mango curry chicken sandwich':'wmango','mortadella focaccia':'wmort','pesto provolone focaccia':'wpesto','prosciutto & sundried tomato focaccia':'wpros','turkey & gouda focaccia':'wturk','corned beef pragel':'gcorn','tuna pragel':'gtuna','ribeye steak sandwich':'wsteak','schnitzel sandwich':'wschn','hh caprese panini':'wcap*0.5','hh chicken panini':'wchx*0.5','hh corned beef panini':'wcorn*0.5','mushroom & provolone omelette':'x','ramekins · fresh avocado':'x','ramekins · cucumber':'x','ramekins · tomato':'x','ramekins · siracha':'x','hh aperol spritz (3.5 oz)':'x','hh cabernet (5 oz)':'x','hh chardonnay (5 oz)':'x','hh corona':'x','hh espresso martini (1.5 oz)':'x','hh margarita':'x','hh prosecco (5 oz)':'x','hh stella':'x','hh white sangria (6 oz)':'x','custom amount':'x','unpaid':'x','delivery fee':'x','delivery tip':'x','apron':'x','bread bag':'x','coffee cup 14oz':'x','tumbler 30oz':'x','tea glass':'x','greeting card':'x','flower bouquet':'x','gift basket':'x','amarena cherries':'x','bottled jam':'x','honey jar':'x','jam donut':'x','labaneh':'x','granola bag':'x','freshly squeezed apple juice 192oz':'x','add cutlery':'x','hot water':'x','milk cup':'x','ramekin':'x','side salad':'x','pizza slice':'x','extra eggs · upgrade to egg whites':'x','egg style · poached':'x','egg style · hardboiled':'x','egg style · soft boiled':'x','cajun chicken bowl':'x','tuna sashimi bowl':'x'};
+const norm=x=>String(x||'').toLowerCase().replace(/\s+/g,' ').trim();
+function parseCSV(txt){const rows=[];let row=[],f='',q=false;txt=txt.replace(/^﻿/,'');for(let i=0;i<txt.length;i++){const c=txt[i];if(q){if(c==='"'){if(txt[i+1]==='"'){f+='"';i++}else q=false}else f+=c}else if(c==='"')q=true;else if(c===','){row.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&txt[i+1]==='\n')i++;row.push(f);f='';if(row.some(x=>x!==''))rows.push(row);row=[]}else f+=c}if(f!==''||row.length){row.push(f);if(row.some(x=>x!==''))rows.push(row)}return rows}
+function readImport(name,txt){const R=parseCSV(txt);if(R.length<2)return null;const H=R[0].map(norm),ci=n=>H.indexOf(n),iSet=H.findIndex(h=>h==='modifier set'||h==='modifier set name'),iMod=H.findIndex(h=>h==='modifier'||h==='modifier name'),isMod=iSet>=0&&iMod>=0;
+ let iN=ci('item name')>=0?ci('item name'):ci('item'),iQ=ci('items sold')>=0?ci('items sold'):ci('qty'),iC=ci('category'),iD=ci('date');
+ if(isMod){iN=iMod;iC=iSet;iQ=['qty sold','quantity sold','net qty sold','count'].map(ci).find(x=>x>=0);if(iQ==null)iQ=-1}
+ if(iN<0||iQ<0)return null;const rows=[];
+ R.slice(1).forEach(r=>{const qv=parseFloat(String(r[iQ]).replace(/,/g,''));if(!(qv>0)||!r[iN])return;let d=null;if(iD>=0){const x=String(r[iD]).trim();let m;if(m=x.match(/^(\d{4})-(\d{2})-(\d{2})/))d=m[1]+'-'+m[2]+'-'+m[3];else if(m=x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/))d=(m[3].length===2?'20'+m[3]:m[3])+'-'+pad(+m[1])+'-'+pad(+m[2])}rows.push({name:isMod?(r[iSet]||'').trim()+' · '+r[iMod].trim():r[iN].trim(),cat:iC>=0?(r[iC]||'').trim():'',qty:qv,date:d})});
+ const m=name.match(/(\d{4}-\d{2}-\d{2})-(\d{4}-\d{2}-\d{2})/);return {file:name,rows,hasDates:iD>=0&&rows.length>0&&rows.every(r=>r.date),from:m?m[1]:'',to:m?m[2]:''}}
+let pdfReady=null;
+function loadPdfJs(){if(pdfReady)return pdfReady;const base='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';const add=src=>new Promise((ok,no)=>{const sc=document.createElement('script');sc.src=src;sc.onload=ok;sc.onerror=()=>no(new Error('load'));document.head.appendChild(sc)});
+ pdfReady=add(base+'pdf.min.js').then(()=>add(base+'pdf.worker.min.js'));pdfReady.catch(()=>{pdfReady=null});return pdfReady}
+async function readPdf(name,buf){await loadPdfJs();const doc=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;const rows=[],checks=[];let from='',to='',mode=null,cols=null,pend=[],grand=null;
+ const num=x=>{const t=x.replace(/,/g,'');return /^-?\d+(\.\d+)?$/.test(t)?parseFloat(t):null};
+ for(let pn=1;pn<=doc.numPages;pn++){const pg=await doc.getPage(pn);const tc=await pg.getTextContent();const it=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5],w:i.width}));
+  if(!from){const ds=it.map(i=>i.s).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x));if(ds.length>=2){from=ds[0];to=ds[1]}}
+  const H=k=>it.find(i=>i.s===k);
+  if(H('Item Name')&&H('Items Sold')){mode='item';cols={n0:H('Item Name').x,n1:H('Item Variation')?H('Item Variation').x:H('Items Sold').x,q:H('Items Sold').x+H('Items Sold').w/2,top:H('Item Name').y}}
+  else if(H('Modifier Set')&&H('Modifier')){mode='mod';const qs=it.find(i=>i.s==='Qty Sold')||it.filter(i=>i.s==='Sold').sort((a,b)=>a.x-b.x)[1];const nq=it.find(i=>i.s==='Net Qty');cols={n0:H('Modifier Set').x,m0:H('Modifier').x,n1:nq?nq.x:(qs?qs.x-60:9999),q:qs?qs.x+qs.w/2:0,top:H('Modifier Set').y-12}}
+  else if(!mode)continue;
+  if(!cols||!cols.q)continue;const top=cols.top-4;
+  const body=it.filter(i=>i.y<top&&i.y>30);
+  const qt=body.filter(i=>num(i.s)!=null&&Math.abs(i.x+i.w/2-cols.q)<30).sort((a,b)=>b.y-a.y);
+  const R=qt.map(q=>({y:q.y,qty:num(q.s),a:[],b:[]}));
+  body.filter(i=>i.x<cols.n1-2&&num(i.s)==null&&!/^\$/.test(i.s)).forEach(i=>{let best=null,bd=14;R.forEach(r=>{const d=Math.abs(r.y-i.y);if(d<bd){bd=d;best=r}});if(!best)return;
+   if(mode==='mod'&&i.x>=cols.m0-2)best.b.push(i);else best.a.push(i)});
+  R.forEach(r=>{const j=arr=>arr.sort((a,b)=>b.y-a.y||a.x-b.x).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim();const A=j(r.a),B=j(r.b);
+   const tot=/^(.*?)\s*(toplam|total)$/i.exec(mode==='mod'?A+(B?' '+B:''):A);
+   if(/^genel toplam$|^grand total$/i.test(A)){if(mode==='item')grand=r.qty;return}
+   if(tot){const cat=tot[1].trim();
+    if(mode==='mod'){const sum=rows.filter(x=>x.mod&&x.cat===cat).reduce((a,b)=>a+b.qty,0);checks.push({cat,sum,tot:r.qty,ok:Math.abs(sum-r.qty)<0.001})}
+    else{let P=pend.slice(),sum=P.reduce((x,y)=>x+y.qty,0);while(P.length>1&&sum-r.qty>0.001){const d=P.shift();d.cat='?';sum-=d.qty}
+     P.forEach(p=>p.cat=cat);checks.push({cat,sum,tot:r.qty,ok:Math.abs(sum-r.qty)<0.001})}
+    pend=[];return}
+   if(!A)return;const row=mode==='mod'?{name:A+' · '+B,cat:A,qty:r.qty,date:null,mod:1}:{name:A,cat:'',qty:r.qty,date:null};if(r.qty>0)rows.push(row);pend.push(row)})}
+ pend.forEach(p=>{if(!p.mod&&!p.cat)p.cat='?'});if(grand!=null){const s2=rows.filter(r=>!r.mod).reduce((x,y)=>x+y.qty,0);checks.push({cat:'TOTAL',sum:s2,tot:grand,ok:Math.abs(s2-grand)<0.001})}
+ if(!rows.length)return null;return {file:name,rows,hasDates:false,from,to,checks}}
+function resolve(r){const k=norm(r.name);let v=S.map[k];if(v===undefined){v=menuIds().find(i=>norm(S.recs[i].name)===k)||ALIAS[k];if(v===undefined)v=r.cat==='?'||KIT.has(norm(r.cat))?null:'auto'}if(v&&v!=='x'&&v!=='auto'&&!S.recs[v.split('*')[0]])v=null;return v}
+function eggFactor(){let a=0,b=0;imp.rows.forEach(r=>{const v=resolve(r);if(v==='side1')a+=r.qty;if(v==='side2')b+=r.qty});return a+b?(a+2*b)/(a+b):1.5}
+function impDem(){const dem={},ef=eggFactor();imp.rows.forEach(r=>{const v=resolve(r);if(!v||v==='x'||v==='auto')return;const a=v.split('*');dem[a[0]]=(dem[a[0]]||0)+r.qty*(+a[1]||1)*(a[0]==='eggscr'?ef:1)});return dem}
+function impView(){const R=imp.rows.map((r,n)=>({r,n,v:resolve(r)})),tot=R.reduce((a,x)=>a+x.r.qty,0),ok=R.filter(x=>x.v&&x.v!=='x'&&x.v!=='auto'),wait=R.filter(x=>x.v===null),ign=R.filter(x=>x.v==='x'),auto=R.filter(x=>x.v==='auto');
+ const okQ=ok.reduce((a,x)=>a+x.r.qty*(+x.v.split('*')[1]||1),0),multi=!imp.hasDates&&imp.from!==imp.to,ids=menuIds();
+ let h=`<div class="tiles"><div class="tile"><span>${t('impAll')}</span><b>${tot.toLocaleString()}</b></div><div class="tile"><span>${t('impOk')}</span><b>${r1(okQ).toLocaleString()}</b></div><div class="tile"><span>${t('impIgn')}</span><b>${(ign.length+auto.length)}</b></div><div class="tile"><span>${t('impWait')}</span><b>${wait.length}</b>${wait.length?`<span class="pill crit" style="margin-top:4px">!</span>`:''}</div></div>`;
+ h+=`<p class="hint"><b>${esc(imp.file)}</b>${imp.from?' · '+imp.from+' → '+imp.to:''} · ${auto.length} ${t('impAuto')}.</p>`;
+ if(imp.checks){const bad=imp.checks.filter(c=>!c.ok);h+=bad.length?`<div class="banner" style="background:var(--crit-bg);color:var(--crit)"><span><b>${t('chkBad')}</b> ${bad.map(c=>esc(c.cat)+': '+c.sum+' ≠ '+c.tot).join(' · ')}</span></div>`:`<p class="hint"><span class="pill">✓</span> ${t('chkOk')} (${imp.checks.length})</p>`}
+ if(!imp.hasDates)h+=`<div class="row"><label class="f">${t('from')}<input type="date" id="i-from" data-act="impDate" data-k="from" value="${imp.from}"></label><label class="f">${t('to')}<input type="date" id="i-to" data-act="impDate" data-k="to" value="${imp.to}"></label></div>`;
+ h+=`<h2>${t('impRowsT')}</h2><div class="scroll"><table><thead><tr><th>${t('sq')}</th><th>${t('qty')}</th><th>${t('appItem')}</th><th></th></tr></thead><tbody>`;
+ wait.concat(ok,ign).forEach(x=>{const a=x.v&&x.v!=='x'?x.v.split('*'):[x.v||''];h+=`<tr><td>${esc(x.r.name)}<br><span class="muted" style="font-size:13px">${esc(x.r.cat)}</span></td><td class="num"><b>${x.r.qty}</b></td><td><select class="${x.v===null?'ov':''}" aria-label="${esc(x.r.name)}" data-act="imap" data-n="${x.n}"><option value="">— ${t('choose')} —</option><option value="x"${x.v==='x'?' selected':''}>${t('skip')}</option>${ids.map(i=>`<option value="${i}"${a[0]===i?' selected':''}>${esc(S.recs[i].name)}</option>`).join('')}</select></td><td>${x.v&&x.v!=='x'?`<select aria-label="${t('halfP')}" data-act="ifac" data-n="${x.n}"><option value="1">${t('full')}</option><option value="0.5"${a[1]==='0.5'?' selected':''}>${t('halfP')}</option></select>`:''}</td></tr>`});
+ h+=`</tbody></table></div>${wait.length?`<p class="hint">${t('impNeed')}</p>`:multi?`<p class="hint">${t('impNoDay')}</p>`:''}<div class="row">${wait.length?`<button class="btn" data-act="ignoreRest">${t('ignoreRest')} (${wait.length})</button>`:''}<button class="btn pri" data-act="impUse"${wait.length?' disabled':''}>${t('impUse')} →</button><button class="btn pri" data-act="impSave"${wait.length||multi||(!imp.hasDates&&!imp.from)?' disabled':''}>${t('impSave')}</button><button class="btn" data-act="impClose">${t('impClose')}</button></div>`;return h}
+function viewUse(){if(sTo<sFrom)sTo=sFrom;const ids=menuIds(),dem={};let sold=0,d=sFrom,cost=0,noP=0;
+ for(let i=0;i<92&&d<=sTo;i++){const dy=S.sales[d]||{};ids.forEach(id=>{if(dy[id]){dem[id]=(dem[id]||0)+dy[id];sold+=dy[id]}});d=addD(d,1)}
+ if(useFile){for(const k in dem)delete dem[k];Object.assign(dem,useFile.dem);sold=r1(Object.values(dem).reduce((a,b)=>a+b,0))}
+ const BD={};for(const id in dem){if(!dem[id])continue;const Y=explode({[id]:dem[id]},false,true);for(const k in Y.ing)if(Y.ing[k]>1e-6)(BD['i:'+k]=BD['i:'+k]||[]).push([id,Y.ing[k]]);for(const k in Y.prod)if(Y.prod[k].need>1e-6)(BD['r:'+k]=BD['r:'+k]||[]).push([id,Y.prod[k].need])}
+ const drill=(key,tot,unit,cols)=>{if(!openX[key]||!BD[key])return '';return `<tr class="sub"><td colspan="${cols}"><table><thead><tr><th>${t('inDish')}</th><th>${t('portions2')}</th><th>${t('used')}</th><th>${t('share')}</th></tr></thead><tbody>${BD[key].sort((a,b)=>b[1]-a[1]).map(x=>`<tr><td>${esc(S.recs[x[0]].name)}</td><td>${r1(dem[x[0]]).toLocaleString()}</td><td class="num"><b>${q(x[1],unit)}</b></td><td>${tot>0?Math.round(x[1]/tot*100)+'%':'—'}</td></tr>`).join('')}</tbody></table></td></tr>`};
+ const X=explode(dem,false,true),all=Object.keys(X.ing).map(id=>{const i=S.ings[id];if(!i)return null;const u=unitCost(id);return {id,i,a:X.ing[id],c:u!=null?u*X.ing[id]:null}}).filter(r=>r&&r.a>0.001);
+ all.forEach(r=>{if(r.i.cat==='other')return;if(r.c!=null)cost+=r.c;else noP++});
+ const rows=all.filter(r=>cats[r.i.cat]).sort((a,b)=>CATS.indexOf(a.i.cat)-CATS.indexOf(b.i.cat)||a.i.name.localeCompare(b.i.name)),pr=Object.keys(X.prod).filter(id=>X.prod[id].need>0.001).sort((a,b)=>S.recs[a].name.localeCompare(S.recs[b].name));
+ let h=useFile?`<div class="banner"><span>${t('useFileB')}: <b>${esc(useFile.file)}</b></span><button class="btn sm" data-act="useFileX">${t('useFileX')}</button></div>`:'';
+ h+=`<section class="card"><h2>${t('useT')}</h2><p class="hint">${t('useHint')}</p><div class="row"><label class="f">${t('from')}<input type="date" id="u-from" data-act="use" data-k="from" value="${sFrom}"></label><label class="f">${t('to')}<input type="date" id="u-to" data-act="use" data-k="to" value="${sTo}"></label>
+  <div style="display:grid;gap:4px"><span class="hint" style="font-weight:600;text-transform:uppercase;font-size:12px;letter-spacing:.04em">${t('show')}</span><div class="chips">${CATS.map(c=>`<button class="chip" aria-pressed="${cats[c]}" data-act="cat" data-v="${c}">${t(c)}</button>`).join('')}</div></div></div></section>
+ <div class="tiles"><div class="tile"><span>${t('sold')}</span><b>${sold.toLocaleString()}</b></div><div class="tile"><span>${t('useTot')}</span><b>${money(cost)}</b>${noP?`<span class="pill warn" style="margin-top:4px">${noP} ${t('noPrice')}</span>`:''}</div></div><p class="hint">${t('costNote')}</p>`;
+ if(!sold)return h+`<section class="card"><p class="muted">${t('noSales')}</p></section>`;
+ h+=`<section class="card"><h2>${t('ings')}</h2><p class="hint">${t('tapHint')}</p><div class="scroll"><table><thead><tr><th>${t('ing')}</th><th>${t('used')}</th><th>${t('useCost')}</th></tr></thead><tbody>`;
+ let c0='';rows.forEach(r=>{if(r.i.cat!==c0){c0=r.i.cat;h+=`<tr class="grp"><td colspan="3">${t(c0)}</td></tr>`}h+=`<tr class="tap" data-act="xing" data-v="i:${r.id}"><td>${openX['i:'+r.id]?'▾':'▸'} ${esc(r.i.name)}</td><td class="num"><b>${q(r.a,r.i.unit)}</b></td><td>${r.c!=null?money(r.c):'—'}</td></tr>`+drill('i:'+r.id,r.a,r.i.unit,3)});
+ h+=`</tbody></table></div></section><section class="card"><h2>${t('usePrep')}</h2><div class="scroll"><table><thead><tr><th>${t('comp')}</th><th>${t('used')}</th><th>${t('batches')}</th></tr></thead><tbody>${pr.map(id=>{const r=S.recs[id],n=X.prod[id].need;return `<tr class="tap" data-act="xing" data-v="r:${id}"><td>${openX['r:'+id]?'▾':'▸'} ${esc(r.name)}</td><td class="num"><b>${q(n,'g')}</b></td><td>${r.yield>0?(n/r.yield).toFixed(2):'—'}</td></tr>`+drill('r:'+id,n,'g',3)}).join('')}</tbody></table></div></section>`;return h}
+function viewRecipes(){const r=S.recs[selRec]||S.recs[Object.keys(S.recs)[0]];if(!S.recs[selRec])selRec=Object.keys(S.recs)[0];
+ let list=`<div class="list">`,g='';menuIds().forEach(id=>{const x=S.recs[id];if(x.group!==g){g=x.group;list+=`<div class="g">${esc(g)}</div>`}list+=`<button aria-current="${id===selRec}" data-act="sel" data-r="${id}">${esc(x.name)}</button>`});
+ list+=`<div class="g">${t('preps')}</div>`;prepIds().sort((a,b)=>S.recs[a].name.localeCompare(S.recs[b].name)).forEach(id=>{list+=`<button aria-current="${id===selRec}" data-act="sel" data-r="${id}">${esc(S.recs[id].name)}</button>`});list+=`</div>`;
+ const c=recCost(selRec),isM=r.type==='menu',opts=sel=>`<optgroup label="${t('preps')}">${prepIds().filter(i=>i!==selRec).map(i=>`<option value="r:${i}"${sel==='r:'+i?' selected':''}>${esc(S.recs[i].name)}</option>`).join('')}</optgroup>`+CATS.map(ct=>`<optgroup label="${t(ct)}">${Object.keys(S.ings).filter(i=>S.ings[i].cat===ct).sort((a,b)=>S.ings[a].name.localeCompare(S.ings[b].name)).map(i=>`<option value="i:${i}"${sel==='i:'+i?' selected':''}>${esc(S.ings[i].name)}</option>`).join('')}</optgroup>`).join('');
+ let ed=`<div class="row"><label class="f" style="flex:1;min-width:200px">${t('name')}<input type="text" id="r-name" data-act="rec" data-k="name" value="${esc(r.name)}"></label>`;
+ ed+=isM?`<label class="f">${t('group')}<select id="r-group" data-act="rec" data-k="group">${GROUPS.map(x=>`<option${x===r.group?' selected':''}>${x}</option>`).join('')}</select></label><label class="f">${t('price')}<input type="number" id="r-price" min="0" step="0.05" data-act="rec" data-k="price" value="${r.price!=null?r.price:''}"></label>`
+  :`<label class="f">${t('yield')}<input type="number" id="r-yield" min="0" step="1" data-act="rec" data-k="yield" value="${r.yield||''}"></label><label class="f">${t('stockG')}<input type="number" id="r-stock" min="0" step="50" data-act="rec" data-k="stock" value="${r.stock||0}"></label>`;
+ ed+=`</div><label class="f">${t('note')}<input type="text" id="r-note" data-act="rec" data-k="note" value="${esc(r.note||'')}"></label>
+ <div class="scroll"><table><thead><tr><th>${t('line')}</th><th>${t('amount')}</th><th>${t('unit')}</th><th></th></tr></thead><tbody>${r.lines.map((l,n)=>{const pc=l.ref[0]==='i'&&S.ings[l.ref.slice(2)]&&S.ings[l.ref.slice(2)].unit==='pc';
+  return `<tr><td><select aria-label="${t('line')}" data-act="lref" data-n="${n}">${opts(l.ref)}</select></td><td><input type="number" min="0" step="any" aria-label="${t('amount')}" data-act="lqty" data-n="${n}" value="${l.qty}"></td><td><select aria-label="${t('unit')}" data-act="lunit" data-n="${n}">${(pc?['pc']:['g','kg','oz','ml','L','sc_purple','sc_red','sc_green','sc_ivory','sc_grey']).map(u=>`<option value="${u}"${u===l.unit?' selected':''}>${UL[u]||u}</option>`).join('')}</select></td><td><button class="btn sm danger" data-act="ldel" data-n="${n}" aria-label="${t('remove')}">×</button></td></tr>`}).join('')}</tbody></table></div>
+ <div class="row"><button class="btn" data-act="ladd">${t('addLine')}</button><button class="btn danger" data-act="rdel">${delArm===selRec?t('delSure'):t('del')}</button></div>
+ <div class="tiles"><div class="tile"><span>${isM?t('costServ'):t('costBatch')}</span><b>${money(c.c)}</b>${c.miss?`<span class="pill warn" style="margin-top:4px">${t('partial')}</span>`:''}</div></div><p class="hint">${t('costNote')}</p>`;
+ return `<div class="two"><section class="card">${list}<div class="row"><button class="btn sm" data-act="rnew" data-v="menu">${t('newMenu')}</button><button class="btn sm" data-act="rnew" data-v="prep">${t('newPrep')}</button></div></section><section class="card"><h2>${esc(r.name)}</h2>${ed}</section></div>`}
+
+function viewIngs(){let h=`<section class="card"><div class="head"><h2>${t('ings')}</h2><button class="btn pri" data-act="iadd">${t('addIng')}</button></div><p class="hint">${t('ingHint')}</p><div class="scroll"><table><thead><tr><th>${t('name')}</th><th>${t('cat')}</th><th>${t('unit')}</th><th>${t('supplier')}</th><th>${t('packSize')}</th><th>${t('packPrice')}</th><th>${t('unitCost')}</th><th>${t('stock')}</th></tr></thead><tbody>`;
+ CATS.forEach(ct=>{h+=`<tr class="grp"><td colspan="8">${t(ct)}</td></tr>`;Object.keys(S.ings).filter(i=>S.ings[i].cat===ct).sort((a,b)=>S.ings[a].name.localeCompare(S.ings[b].name)).forEach(id=>{const i=S.ings[id],u=unitCost(id),f=(k,v,extra)=>`data-act="ing" data-i="${id}" data-k="${k}" value="${v==null?'':esc(v)}" aria-label="${esc(i.name)} ${k}" ${extra||''}`;
+  h+=`<tr><td><input type="text" ${f('name',i.name)}></td><td><select data-act="ing" data-i="${id}" data-k="cat" aria-label="${t('cat')}">${CATS.map(c=>`<option value="${c}"${c===i.cat?' selected':''}>${t(c)}</option>`).join('')}</select></td>
+  <td><select data-act="ing" data-i="${id}" data-k="unit" aria-label="${t('unit')}"><option${i.unit==='g'?' selected':''}>g</option><option${i.unit==='pc'?' selected':''}>pc</option></select></td>
+  <td><input type="text" ${f('supplier',i.supplier)}></td><td><input type="number" min="0" step="any" ${f('packSize',i.packSize)}></td><td><input type="number" min="0" step="0.01" ${f('packPrice',i.packPrice)}></td>
+  <td>${u==null?'<span class="pill warn">?</span>':i.unit==='pc'?money(u)+'/pc':money(u*1000)+'/kg'}</td><td><input type="number" min="0" step="any" ${f('stock',i.stock||0)}></td></tr>`})});
+ return h+`</tbody></table></div></section><section class="card"><button class="btn danger" data-act="resetAll">${delArm==='all'?t('delSure'):t('resetAll')}</button></section>`}
+
+function viewCal(){const today=fmt(new Date()),rows={};for(let n=-35;n<=120;n++){const d=addD(today,n);if(holiday(d))rows[d]=1}Object.keys(S.tags).forEach(d=>rows[d]=1);
+ let h=`<section class="card"><h2>${t('cal')}</h2><p class="hint">${t('calHint')} ${t('factorHint')}</p><div class="row"><label class="f">${t('date')}<input type="date" id="c-date" value="${today}"></label><label class="f" style="flex:1;min-width:180px">${t('label')}<input type="text" id="c-label" placeholder="Promo, catering, storm"></label>
+ <label class="f">${t('mode')}<select id="c-mode">${['exclude','include','adjust','closed'].map(m=>`<option value="${m}">${t(m)}</option>`).join('')}</select></label><label class="f">${t('factor')}<input type="number" id="c-factor" min="0.1" step="0.1" value="1"></label><button class="btn pri" data-act="tagAdd">${t('add')}</button></div>
+ <div class="scroll"><table><thead><tr><th>${t('date')}</th><th>${t('label')}</th><th>${t('mode')}</th><th></th></tr></thead><tbody>`;
+ Object.keys(rows).sort().forEach(d=>{const sp=special(d);h+=`<tr><td><b>${dlabel(d)}</b> <span class="muted">${d}</span></td><td style="text-align:left">${esc(sp.label)} <span class="pill ${sp.auto?'':'warn'}">${sp.auto?t('auto'):t('mine')}</span></td><td>${modeSel(d,sp)}</td><td>${sp.own?`<button class="btn sm" data-act="tagDel" data-d="${d}">${t('remove')}</button>`:''}</td></tr>`});
+ return h+`</tbody></table></div></section>`}
+
+function render(keep){document.documentElement.lang=S.lang;document.getElementById('sub').textContent=t('sub');
+ ['tr','en'].forEach(l=>document.getElementById('lang-'+l).setAttribute('aria-pressed',S.lang===l));
+ fixTab();const inSet=['recipes','ings','cal','team'].includes(tab);document.getElementById('tabs').innerHTML=['sales','use','plan'].filter(okTab).map((k,n)=>`<button data-act="tab" data-v="${k}" aria-current="${tab===k}"><span class="tn">${n+1}</span>${t(k)}</button>`).join('')+`<button class="setb" data-act="tab" data-v="${setTab}" aria-current="${inSet}">⚙ ${t('settings')}</button>`;
+ if(inSet)setTab=tab;
+ const y=window.scrollY;document.getElementById('app').innerHTML=(inSet?`<div class="subnav">${['recipes','ings','cal','team'].filter(okTab).map(k=>`<button class="chip" data-act="tab" data-v="${k}" aria-pressed="${tab===k}">${t(k)}</button>`).join('')}</div>`:'')+{plan:viewPlan,sales:viewSales,use:viewUse,recipes:viewRecipes,ings:viewIngs,cal:viewCal,team:viewTeam}[tab]();gate();if(keep)window.scrollTo(0,y)}
+const num=v=>{const n=parseFloat(v);return isNaN(n)?null:n};
+function setTag(d,patch){const sp=special(d)||{label:'',mode:'exclude',factor:1};S.tags[d]=Object.assign({label:sp.label,mode:sp.mode,factor:sp.factor},patch)}
+
+document.addEventListener('change',e=>{const el=e.target,a=el.dataset.act;if(!a)return;const v=el.value,d=el.dataset;
+ if(a==='impFile'){const f=el.files&&el.files[0];if(!f)return;if(/\.pdf$/i.test(f.name)||f.type==='application/pdf'){msg=t('pdfWait');imp=null;render(true);f.arrayBuffer().then(b=>readPdf(f.name,b)).then(x=>{imp=x;msg=x?'':t('impErr')}).catch(()=>{imp=null;msg=t('pdfErr')}).then(()=>render(true));return}
+  const fr=new FileReader();fr.onload=()=>{imp=readImport(f.name,String(fr.result));msg=imp?'':t('impErr');render(true)};fr.readAsText(f);return}
+ if(a==='imap'){const k=norm(imp.rows[d.n].name);if(v==='')delete S.map[k];else S.map[k]=v;save();render(true);return}
+ if(a==='ifac'){const k=norm(imp.rows[d.n].name),cur=resolve(imp.rows[d.n]);if(cur)S.map[k]=cur.split('*')[0]+(v==='0.5'?'*0.5':'');save();render(true);return}
+ if(a==='impDate'){if(v)imp[d.k]=v;render(true);return}
+ if(a==='plan'){if(d.k==='buffer')S.plan.buffer=Math.max(0,num(v)||0);else if(v){S.plan[d.k]=v;if(d.k==='start'&&S.plan.end<v)S.plan.end=addD(v,3)}}
+ else if(a==='ov'){const n=num(v),k=d.d+'|'+d.r;if(n==null||n===rawFc(d.d,d.r))delete S.overrides[k];else S.overrides[k]=Math.max(0,n)}
+ else if(a==='pstock')S.recs[d.r].stock=Math.max(0,num(v)||0);
+ else if(a==='istock')S.ings[d.i].stock=Math.max(0,num(v)||0);
+ else if(a==='ibuf'){const n=num(v);if(n==null||n===S.plan.buffer)delete S.plan.ingBuffer[d.i];else S.plan.ingBuffer[d.i]=Math.max(0,n)}
+ else if(a==='tagMode')setTag(d.d,{mode:v});else if(a==='tagFactor')setTag(d.d,{factor:Math.max(.1,num(v)||1)});
+ else if(a==='srange'){if(v){if(d.k==='from'){sFrom=v;if(sTo<v)sTo=v}else{sTo=v;if(sFrom>v)sFrom=v}}}
+ else if(a==='use'){if(v){if(d.k==='from'){sFrom=v;if(sTo<v)sTo=v}else{sTo=v;if(sFrom>v)sFrom=v}}}
+ else if(a==='pick'){if(el.checked)picked[d.r]=1;else delete picked[d.r]}
+ else if(a==='pickAll'){picked={};if(el.checked)menuIds().forEach(i=>picked[i]=1)}
+ else if(a==='sale'){const n=num(v);S.sales[salesDate]=S.sales[salesDate]||{};if(n==null)delete S.sales[salesDate][d.r];else S.sales[salesDate][d.r]=Math.max(0,n);if(!Object.keys(S.sales[salesDate]).length)delete S.sales[salesDate]}
+ else if(a==='rec'){const r=S.recs[selRec];r[d.k]=['price','yield','stock'].includes(d.k)?num(v):v}
+ else if(a==='lref'){const l=S.recs[selRec].lines[d.n];l.ref=v;l.unit=v[0]==='i'&&S.ings[v.slice(2)].unit==='pc'?'pc':(l.unit==='pc'?'g':l.unit)}
+ else if(a==='lqty')S.recs[selRec].lines[d.n].qty=Math.max(0,num(v)||0);else if(a==='lunit')S.recs[selRec].lines[d.n].unit=v;
+ else if(a==='ing'){const i=S.ings[d.i];i[d.k]=['packSize','packPrice','stock'].includes(d.k)?num(v):v}
+ else return;save();render(true)});
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.tagName==='INPUT'||el.tagName==='SELECT')return;const a=el.dataset.act,d=el.dataset;
+ if(a!=='rdel'&&a!=='resetAll'&&a!=='allClear')delArm='';
+ if(a==='lang')S.lang=d.v;else if(a==='tab'){tab=d.v;msg=''}else if(a==='cat')cats[d.v]=!cats[d.v];
+ else if(a==='clearSample'){S.sales={};S.overrides={};S.sample=false}
+ else if(a==='resetOv')S.overrides={};
+ else if(a==='sday'){const span=Math.round((parse(sTo)-parse(sFrom))/864e5)+1;sFrom=addD(sFrom,span*d.v);sTo=addD(sTo,span*d.v);picked={}}
+ else if(a==='ignoreRest')imp.rows.forEach(r=>{if(resolve(r)===null)S.map[norm(r.name)]='x'});
+ else if(a==='impClose')imp=null;else if(a==='useFileX')useFile=null;
+ else if(a==='impUse'){useFile={dem:impDem(),file:imp.file};tab='use';window.scrollTo(0,0)}
+ else if(a==='impSave'){if(S.sample){S.sales={};S.overrides={};S.sample=false}const by={};imp.rows.forEach(r=>{const dd=imp.hasDates?r.date:imp.from;by[dd]=by[dd]||{};const v=resolve(r);if(!v||v==='x'||v==='auto')return;const q2=v.split('*');by[dd][q2[0]]=(by[dd][q2[0]]||0)+r.qty*(+q2[1]||1)});const ds=Object.keys(by).sort();ds.forEach(dd=>S.sales[dd]=by[dd]);msg=ds.length+' '+t('impSaved');salesDate=ds[ds.length-1];sFrom=ds[0];sTo=ds[ds.length-1];imp=null}
+ else if(a==='rangeUse'){useFile=null;sFrom=sFrom;sTo=sTo;tab='use';window.scrollTo(0,0)}
+ else if(a==='xing'){if(openX[d.v])delete openX[d.v];else openX[d.v]=1}
+ else if(a==='seeUse'){useFile=null;sFrom=sTo=salesDate;tab='use';window.scrollTo(0,0)}
+ else if(a==='step')planStep=d.v;else if(a==='grp')openG[d.v]=!openG[d.v];else if(a==='detail')detail=!detail;
+ else if(a==='grpAll'){const all=GROUPS.every(g=>openG[g]);GROUPS.forEach(g=>openG[g]=!all)}
+ else if(a==='inc'||a==='dec'){const dy=S.sales[salesDate]=S.sales[salesDate]||{};dy[d.r]=Math.max(0,(dy[d.r]||0)+(a==='inc'?1:-1))}
+ else if(a==='selDel'){const dy=S.sales[salesDate];if(dy){Object.keys(picked).forEach(i=>delete dy[i]);if(!Object.keys(dy).length)delete S.sales[salesDate]}picked={}}
+ else if(a==='dayClear'){delete S.sales[salesDate];picked={}}
+ else if(a==='allClear'){if(delArm!=='sales')delArm='sales';else{delArm='';S.sales={};S.overrides={};S.sample=false;picked={}}}
+ else if(a==='import'){let ok=0,bad=0;const names={};menuIds().forEach(id=>names[S.recs[id].name.toLowerCase()]=id);
+  document.getElementById('csv').value.split('\n').forEach(line=>{if(!line.trim())return;const p=line.split(/[,;\t]/).map(x=>x.trim()),id=names[(p[1]||'').toLowerCase()],n=num(p[2]);
+   if(/^\d{4}-\d{2}-\d{2}$/.test(p[0])&&id&&n!=null){S.sales[p[0]]=S.sales[p[0]]||{};S.sales[p[0]][id]=n;ok++}else bad++});msg=ok+' '+t('imported')+(bad?', '+bad+' '+t('skipped'):'')}
+ else if(a==='sel')selRec=d.r;
+ else if(a==='ladd'){const first=Object.keys(S.ings).find(i=>S.ings[i].cat==='protein')||Object.keys(S.ings)[0];S.recs[selRec].lines.push({ref:'i:'+first,qty:0,unit:S.ings[first].unit})}
+ else if(a==='ldel')S.recs[selRec].lines.splice(+d.n,1);
+ else if(a==='rnew'){const id='n'+Date.now();S.recs[id]=d.v==='menu'?{name:t('newMenu'),type:'menu',group:'Brunch',price:null,lines:[],note:''}:{name:t('newPrep'),type:'prep',yield:1000,stock:0,lines:[],note:''};selRec=id}
+ else if(a==='rdel'){if(delArm!==selRec)delArm=selRec;else{delArm='';const gone=selRec;delete S.recs[gone];Object.values(S.recs).forEach(r=>r.lines=r.lines.filter(l=>l.ref!=='r:'+gone));selRec=Object.keys(S.recs)[0]}}
+ else if(a==='iadd'){S.ings['n'+Date.now()]={name:'New ingredient',cat:'protein',unit:'g',supplier:'',packSize:null,packPrice:null,stock:0}}
+ else if(a==='resetAll'){if(delArm!=='all')delArm='all';else{delArm='';const l=S.lang;S=seed();S.map={};S.lang=l;selRec='croben'}}
+ else if(a==='tagAdd'){const dt=document.getElementById('c-date').value;if(dt)S.tags[dt]={label:document.getElementById('c-label').value||(holiday(dt)||'Special day'),mode:document.getElementById('c-mode').value,factor:Math.max(.1,num(document.getElementById('c-factor').value)||1)}}
+ else if(a==='tagDel')delete S.tags[d.d];
+ else return;save();render(a!=='tab')});
+/* ---------- cloud: Supabase sign-in, shared data, permissions ---------- */
+const SB_URL='https://joymbiijpxyumxsspwlb.supabase.co',SB_KEY='sb_publishable_ZGCSpNj-GmLyMB9Q05ENBg_zACgybmZ';
+const TEAM_FN=SB_URL+'/functions/v1/team-access',APP_URL='https://atakanercaann.github.io/bready-forecast/';
+const RUNGS=['none','view','edit','delete','full'];
+let sb=null,me=null,perms={},base=null,queue=Promise.resolve(),pending=0,syncState='',lastEdit=0,booted=false,toastT=null;
+const can=(area,need)=>RUNGS.indexOf((perms&&perms[area])||'none')>=RUNGS.indexOf(need||'view');
+const TAB_AREA={sales:'sales',use:'usage',plan:'plan',recipes:'recipes',ings:'ingredients',cal:'calendar',team:'team'};
+const okTab=k=>can(TAB_AREA[k],'view');
+/* what each button or field needs; anything not listed is free (moving around, language, dates to look at) */
+const ACT={sale:['sales','edit'],inc:['sales','edit'],dec:['sales','edit'],import:['sales','edit'],impSave:['sales','edit'],imap:['sales','edit'],ifac:['sales','edit'],ignoreRest:['sales','edit'],
+ selDel:['sales','delete'],dayClear:['sales','delete'],allClear:['sales','delete'],clearSample:['sales','delete'],pick:['sales','delete'],pickAll:['sales','delete'],
+ ov:['plan','edit'],resetOv:['plan','edit'],ibuf:['plan','edit'],pstock:['recipes','edit'],istock:['ingredients','edit'],
+ rec:['recipes','edit'],lref:['recipes','edit'],lqty:['recipes','edit'],lunit:['recipes','edit'],ladd:['recipes','edit'],ldel:['recipes','edit'],rnew:['recipes','edit'],rdel:['recipes','delete'],
+ ing:['ingredients','edit'],iadd:['ingredients','edit'],
+ tagMode:['calendar','edit'],tagFactor:['calendar','edit'],tagAdd:['calendar','edit'],tagDel:['calendar','delete'],
+ resetAll:['nobody','full']};
+const allowed=a=>{const p=ACT[a];return !p||can(p[0],p[1])};
+function migrate(X){return addV22(addV21(addV20(addV19(addV18(addV17(addV16(addV15(addV14(addV13(addV12(addV11(addV10(addV9(addV8(addV7(addV6(addV5(addBread3(addBread2(addBread(X)))))))))))))))))))))}
+function fixTab(){if(!okTab(tab)){tab=['sales','use','plan','recipes','ings','cal','team'].find(okTab)||'sales'}if(!okTab(setTab))setTab=['recipes','ings','cal','team'].find(okTab)||setTab}
+function gate(){document.querySelectorAll('#app [data-act]').forEach(el=>{if(allowed(el.dataset.act))return;if(/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName))el.disabled=true;else el.hidden=true});
+ const sb2=document.querySelector('nav .setb');if(sb2&&!['recipes','ings','cal','team'].some(okTab))sb2.hidden=true;
+ const w=document.getElementById('who');if(w&&me){w.hidden=false;w.innerHTML=`<span class="sync${syncState==='bad'?' bad':''}">${syncState==='saving'?t('saving'):''}</span><span>${esc(me.email)}</span><button class="btn sm" data-act="logout">${t('signOut')}</button>`}
+ if(tab==='team'&&window.TeamKit){const root=document.getElementById('teamRoot');if(root)TeamKit.mountTeamPage(root,{api:teamApi,config:TeamKit.config})}}
+function viewTeam(){return `<section class="card" id="teamRoot"></section>`}
+function toast(m){let el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,4500)}
+
+/* table rows as plain strings, so two states can be compared */
+const WRITE={ingredients:'ingredients',recipes:'recipes',sales:'sales',name_map:'sales',special_days:'calendar',plan_settings:'plan'};
+function rowsOf(X){const o={ingredients:{},recipes:{},sales:{},name_map:{},special_days:{},plan_settings:{}};
+ for(const k in X.ings)o.ingredients[k]=JSON.stringify(X.ings[k]);
+ for(const k in X.recs)o.recipes[k]=JSON.stringify(X.recs[k]);
+ for(const d in X.sales)for(const i in X.sales[d])if(X.sales[d][i]>0)o.sales[d+'|'+i]=String(X.sales[d][i]);
+ for(const k in X.map||{})o.name_map[k]=String(X.map[k]);
+ for(const d in X.tags)o.special_days[d]=JSON.stringify(X.tags[d]);
+ if(X.plan)o.plan_settings.plan=JSON.stringify(X.plan);o.plan_settings.overrides=JSON.stringify(X.overrides||{});o.plan_settings.meta=JSON.stringify({v:X.v||0,sample:!!X.sample});
+ return o}
+function rowFor(tb,k,v){if(tb==='ingredients'||tb==='recipes')return {id:k,data:JSON.parse(v)};
+ if(tb==='sales'){const i=k.indexOf('|');return {day:k.slice(0,i),item_id:k.slice(i+1),qty:+v}}
+ if(tb==='name_map')return {square_name:k,target:v};if(tb==='special_days')return {day:k,data:JSON.parse(v)};return {key:k,data:JSON.parse(v)}}
+const PK={ingredients:'id',recipes:'id',sales:'day,item_id',name_map:'square_name',special_days:'day',plan_settings:'key'};
+
+async function push(){if(!base)return;const cur=rowsOf(S);
+ for(const tb in cur){if(!can(WRITE[tb],'edit'))continue;const a=cur[tb],b=base[tb],up=[],gone=[];
+  for(const k in a)if(a[k]!==b[k])up.push(k);for(const k in b)if(!(k in a))gone.push(k);
+  if(!up.length&&!gone.length)continue;
+  for(let n=0;n<up.length;n+=500){const part=up.slice(n,n+500);const {error}=await sb.from(tb).upsert(part.map(k=>rowFor(tb,k,a[k])),{onConflict:PK[tb]});if(error)throw error;part.forEach(k=>b[k]=a[k])}
+  if(!gone.length)continue;
+  if(can(WRITE[tb],'delete')){
+   if(tb==='sales'){const by={};gone.forEach(k=>{const i=k.indexOf('|');(by[k.slice(0,i)]=by[k.slice(0,i)]||[]).push(k.slice(i+1))});
+    for(const d in by){const {error}=await sb.from('sales').delete().eq('day',d).in('item_id',by[d]);if(error)throw error}}
+   else{const {error}=await sb.from(tb).delete().in(PK[tb],gone);if(error)throw error}
+   gone.forEach(k=>delete b[k])}
+  else if(tb==='sales'){/* may change but not delete: a removed number is saved as 0 */
+   const {error}=await sb.from('sales').upsert(gone.map(k=>rowFor('sales',k,'0')),{onConflict:PK.sales});if(error)throw error;gone.forEach(k=>delete b[k])}
+  else gone.forEach(k=>delete b[k])}}
+function save(){try{localStorage.setItem(KEY+'.view',JSON.stringify({from:sFrom,to:sTo,lang:S.lang,tab}))}catch(e){}
+ if(!base)return;lastEdit=Date.now();pending++;syncState='saving';showSync();
+ queue=queue.then(push).then(()=>{if(!--pending){syncState='';showSync()}},async e=>{pending=0;syncState='bad';toast(t('saveErr')+' '+((e&&e.message)||e));await reload(true)})}
+function showSync(){const el=document.querySelector('#who .sync');if(el){el.className='sync'+(syncState==='bad'?' bad':'');el.textContent=syncState==='saving'?t('saving'):''}}
+
+async function fetchAll(tb){let out=[];for(let from=0;;from+=1000){const {data,error}=await sb.from(tb).select('*').range(from,from+999);if(error)throw error;out=out.concat(data);if(data.length<1000)break}return out}
+async function pull(){const [ings,recs,sales,map,days,ps]=await Promise.all(['ingredients','recipes','sales','name_map','special_days','plan_settings'].map(fetchAll));
+ const X={lang:S?S.lang:'tr',ings:{},recs:{},sales:{},map:{},tags:{},overrides:{},plan:null,v:0,sample:false};
+ ings.forEach(r=>X.ings[r.id]=r.data);recs.forEach(r=>X.recs[r.id]=r.data);
+ sales.forEach(r=>{const q2=+r.qty;if(q2>0)(X.sales[r.day]=X.sales[r.day]||{})[r.item_id]=q2});
+ map.forEach(r=>X.map[r.square_name]=r.target);days.forEach(r=>X.tags[r.day]=r.data);
+ ps.forEach(r=>{if(r.key==='plan')X.plan=r.data;else if(r.key==='overrides')X.overrides=r.data||{};else if(r.key==='meta'){X.v=(r.data&&r.data.v)||0;X.sample=!!(r.data&&r.data.sample)}});
+ return X}
+/* reads everything again; keeps this device's own plan dates for people who may not change the shared plan */
+async function reload(quiet){try{const X=await pull(),lang=S.lang,myPlan=S.plan;base=rowsOf(X);
+  if(!Object.keys(X.recs).length&&can('recipes','view')){await firstFill(X);return}
+  const D=seed();X.plan=X.plan||D.plan;X.plan.ingBuffer=X.plan.ingBuffer||{};
+  const v0=X.v;S=migrate(X);S.lang=lang;if(!can('plan','edit')&&myPlan&&booted)S.plan=myPlan;
+  if(!S.recs[selRec])selRec=Object.keys(S.recs)[0];
+  if(S.v!==v0&&can('recipes','edit'))save();
+  if(!quiet||!document.activeElement||!/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))render(true)}
+ catch(e){toast(t('loadErr')+' '+((e&&e.message)||e))}}
+/* an empty database: the first admin fills it with the starting recipes and ingredients */
+async function firstFill(X){if(!(can('recipes','edit')&&can('ingredients','edit'))){document.getElementById('app').innerHTML=`<section class="card"><p>${t('emptyDb')}</p></section>`;return}
+ const lang=S.lang;S=seed();S.lang=lang;S.sales={};S.sample=false;S.overrides={};base=rowsOf(X);render();save();
+ await queue;if(syncState!=='bad')toast(t('seeded'))}
+
+async function teamApi(body){const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error(t('signIn'));
+ const r=await fetch(TEAM_FN,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+session.access_token,apikey:SB_KEY},body:JSON.stringify(body)});
+ let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
+
+/* sign-in screens */
+function authBox(html){document.getElementById('nav').hidden=true;document.getElementById('app').innerHTML='';const w=document.getElementById('who');if(w)w.hidden=true;document.getElementById('auth').innerHTML=html}
+function showLogin(note){authBox(`<form class="card" id="loginF"><h2>${t('signIn')}</h2>
+ <label class="f">${t('email')}<input id="lEmail" type="email" autocomplete="username" required></label>
+ <label class="f">${t('password')}<input id="lPw" type="password" autocomplete="current-password" required></label>
+ <button class="btn pri" type="submit">${t('signIn')}</button><p class="err" id="lErr" role="alert"></p>${note?`<p class="ok">${esc(note)}</p>`:''}
+ <button class="lnk" type="button" id="lForgot">${t('forgot')}</button></form>`);
+ document.getElementById('loginF').onsubmit=async e=>{e.preventDefault();const er=document.getElementById('lErr');er.textContent='';
+  const {error}=await sb.auth.signInWithPassword({email:document.getElementById('lEmail').value.trim(),password:document.getElementById('lPw').value});if(error)er.textContent=t('badLogin')};
+ document.getElementById('lForgot').onclick=async()=>{const em=document.getElementById('lEmail').value.trim(),er=document.getElementById('lErr');if(!em){er.textContent=t('email')+'?';return}
+  await sb.auth.resetPasswordForEmail(em,{redirectTo:APP_URL});showLogin(t('resetSent'))}}
+function showSetPw(){authBox(`<form class="card" id="pwF"><h2>${t('setPw')}</h2>
+ <label class="f">${t('newPw')}<input id="nPw" type="password" minlength="8" autocomplete="new-password" required></label>
+ <button class="btn pri" type="submit">${t('savePw')}</button><p class="err" id="pErr" role="alert"></p></form>`);
+ document.getElementById('pwF').onsubmit=async e=>{e.preventDefault();const {error}=await sb.auth.updateUser({password:document.getElementById('nPw').value});
+  if(error){document.getElementById('pErr').textContent=error.message;return}needPw=false;history.replaceState(null,'',location.pathname);start()}}
+let needPw=/type=(invite|recovery)/.test(location.hash);
+let starting=null;function start(){if(!starting)starting=start2().finally(()=>starting=null);return starting}
+async function start2(){const {data:{session}}=await sb.auth.getSession();if(!session){showLogin();return}
+ me=session.user;perms=(me.app_metadata&&me.app_metadata.perms)||{};if(needPw){showSetPw();return}
+ document.getElementById('auth').innerHTML='';
+ if(!RUNGS.slice(1).some(r=>Object.values(perms).includes(r))){authBox(`<section class="card"><p>${t('noAccess')}</p><button class="btn" data-act="logout">${t('signOut')}</button></section>`);return}
+ document.getElementById('nav').hidden=false;document.getElementById('app').innerHTML=`<section class="card"><p>${t('loading')}</p></section>`;
+ await reload(false);booted=true}
+
+/* every button and field is checked before the app acts on it */
+['change','click'].forEach(type=>document.addEventListener(type,e=>{const el=e.target.closest&&e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act;
+ if(a==='logout'){e.stopImmediatePropagation();base=null;sb.auth.signOut();return}
+ if(!base){e.stopImmediatePropagation();if(a==='lang'&&type==='click'){S.lang=el.dataset.v;try{const v=JSON.parse(localStorage.getItem(KEY+'.view')||'{}');v.lang=S.lang;localStorage.setItem(KEY+'.view',JSON.stringify(v))}catch(x){}['tr','en'].forEach(l=>document.getElementById('lang-'+l).setAttribute('aria-pressed',S.lang===l));if(document.getElementById('loginF'))showLogin();else if(document.getElementById('pwF'))showSetPw()}return}
+ if(type==='click'&&(el.tagName==='INPUT'||el.tagName==='SELECT'))return;
+ if(!allowed(a)){e.stopImmediatePropagation();e.preventDefault();toast(t('noPerm'));render(true)}},true));
+
+(function boot(){S=seed();S.lang='tr';salesDate=addD(fmt(new Date()),-1);sTo=salesDate;sFrom=salesDate;
+ try{const v=JSON.parse(localStorage.getItem(KEY+'.view')||'{}');if(v.lang)S.lang=v.lang;if(v.from&&v.to){sFrom=v.from;sTo=v.to;salesDate=sFrom}if(v.tab)tab=v.tab}catch(e){}
+ ['tr','en'].forEach(l=>document.getElementById('lang-'+l).setAttribute('aria-pressed',S.lang===l));
+ sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+ sb.auth.onAuthStateChange((ev,session)=>{if(ev==='PASSWORD_RECOVERY')needPw=true;
+  if(ev==='SIGNED_OUT'){me=null;base=null;showLogin()}
+  else if(ev==='SIGNED_IN'&&!me)setTimeout(start,0)
+  else if(ev==='TOKEN_REFRESHED'&&session&&me){const np=(session.user.app_metadata&&session.user.app_metadata.perms)||{};if(JSON.stringify(np)!==JSON.stringify(perms)){perms=np;render(true)}}});
+ start();
+ /* other people's changes come in when the tab is looked at again, and every 2 minutes while idle */
+ let lastPull=Date.now();const fresh=()=>{if(!base||document.visibilityState!=='visible'||pending||imp||Date.now()-lastEdit<20000)return;if(Date.now()-lastPull<60000)return;lastPull=Date.now();sb.auth.refreshSession().catch(()=>{});queue=queue.then(()=>reload(true))};
+ document.addEventListener('visibilitychange',fresh);window.addEventListener('focus',fresh);setInterval(fresh,120000)})();
+</script>
+</body>
+</html>
