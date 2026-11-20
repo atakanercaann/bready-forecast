@@ -459,6 +459,12 @@
       means: { view: "\xD6zel g\xFCnleri g\xF6r\xFCr", edit: "\xD6zel g\xFCn ekler ve de\u011Fi\u015Ftirir", delete: "\xD6zel g\xFCn siler" }
     },
     {
+      key: "invoices",
+      label: "Faturalar",
+      group: "Sat\u0131n alma",
+      means: { view: "Faturalar\u0131 ve dosyalar\u0131n\u0131 g\xF6r\xFCr, d\u0131\u015Fa aktar\u0131r", edit: "Fatura y\xFCkler ve d\xFCzeltir", delete: "Fatura siler", full: "\xD6denmi\u015F faturay\u0131 da de\u011Fi\u015Ftirir ve siler" }
+    },
+    {
       key: "team",
       label: "Ekip ve eri\u015Fim",
       group: "Y\xF6netim",
@@ -477,8 +483,8 @@
     {
       name: "Manager",
       what: "Mutfa\u011F\u0131 y\xF6netir",
-      blurb: "Sat\u0131\u015F girer ve siler; re\xE7ete, fiyat, plan ve \xF6zel g\xFCnleri de\u011Fi\u015Ftirir. Ekibi g\xF6r\xFCr ama yetki veremez.",
-      perms: { sales: "delete", usage: "view", plan: "edit", recipes: "edit", ingredients: "edit", calendar: "edit", team: "view" }
+      blurb: "Sat\u0131\u015F girer ve siler; re\xE7ete, fiyat, plan ve \xF6zel g\xFCnleri de\u011Fi\u015Ftirir; fatura y\xFCkler ve siler. Ekibi g\xF6r\xFCr ama yetki veremez.",
+      perms: { sales: "delete", usage: "view", plan: "edit", recipes: "edit", ingredients: "edit", calendar: "edit", invoices: "delete", team: "view" }
     },
     {
       name: "Supervisor",

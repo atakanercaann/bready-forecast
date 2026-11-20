@@ -99,16 +99,19 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;fon
 .who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 .hr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sync{font-size:12px;color:var(--muted)}.sync.bad{color:var(--crit);font-weight:600}
-#auth{max-width:400px;margin:10vh auto;padding:0 16px}
+#auth{max-width:400px;margin:10vh auto;padding:0 16px}#auth:empty{display:none}
 #auth .card{gap:10px}#auth input{width:100%}#auth .lnk{background:none;border:0;color:var(--accent);font:600 14px var(--body);cursor:pointer;padding:4px 0;justify-self:start}
 #auth .err{color:var(--crit);min-height:1.2em;margin:0;font-size:14px}#auth .ok{color:var(--accent);margin:0;font-size:14px}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;z-index:20;max-width:90vw}
+#invRoot.iv{--iv-accent:var(--accent);--iv-accent-ink:var(--accent-ink);--iv-ink:var(--ink);--iv-muted:var(--muted);--iv-line:var(--line);--iv-soft:var(--soft);--iv-bg:var(--surface);font-family:var(--body);max-width:none}
 #teamRoot.ta{--ta-accent:var(--accent);--ta-accent-ink:var(--accent-ink);--ta-ink:var(--ink);--ta-muted:var(--muted);--ta-line:var(--line);--ta-soft:var(--soft);--ta-bg:var(--surface);font-family:var(--body);max-width:none}
 #teamRoot.ta h1{font:600 18px/1.2 var(--display)}
 </style>
 <link rel="stylesheet" href="team.css">
+<link rel="stylesheet" href="invoices.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script src="team.js"></script>
+<script src="invoices.js"></script>
 </head>
 <body>
 <header>
@@ -130,7 +133,7 @@ const UL={sc_purple:'Purple scoop (¾ oz)',sc_red:'Red scoop (1⅓ oz)',sc_green
 const CATS=['protein','cheese','egg','bread','other'];
 const GROUPS=['Brunch','Pancakes','Pizza','Salads','Plates','Sandwiches','Minis','Pragel','Pasta','Soups','Deli','Sides','Modifiers'];
 const T={
- team:['Team','Ekip'],noPerm:['You do not have permission for this.','Bunun için yetkin yok.'],
+ team:['Team','Ekip'],inv:['Invoices','Faturalar'],noPerm:['You do not have permission for this.','Bunun için yetkin yok.'],
  signIn:['Sign in','Giriş yap'],email:['Email','E-posta'],password:['Password','Şifre'],forgot:['Forgot your password?','Şifremi unuttum'],
  resetSent:['If this address is on the team, a reset link is on its way.','Bu adres ekipteyse şifre sıfırlama bağlantısı gönderildi.'],
  badLogin:['Email or password is wrong.','E-posta ya da şifre yanlış.'],setPw:['Choose your password','Şifreni belirle'],newPw:['New password (at least 8 characters)','Yeni şifre (en az 8 karakter)'],
@@ -422,9 +425,9 @@ function viewCal(){const today=fmt(new Date()),rows={};for(let n=-35;n<=120;n++)
 
 function render(keep){document.documentElement.lang=S.lang;document.getElementById('sub').textContent=t('sub');
  ['tr','en'].forEach(l=>document.getElementById('lang-'+l).setAttribute('aria-pressed',S.lang===l));
- fixTab();const inSet=['recipes','ings','cal','team'].includes(tab);document.getElementById('tabs').innerHTML=['sales','use','plan'].filter(okTab).map((k,n)=>`<button data-act="tab" data-v="${k}" aria-current="${tab===k}"><span class="tn">${n+1}</span>${t(k)}</button>`).join('')+`<button class="setb" data-act="tab" data-v="${setTab}" aria-current="${inSet}">⚙ ${t('settings')}</button>`;
+ fixTab();const inSet=['recipes','ings','cal','team'].includes(tab);document.getElementById('tabs').innerHTML=['sales','use','plan','inv'].filter(okTab).map((k,n)=>`<button data-act="tab" data-v="${k}" aria-current="${tab===k}"><span class="tn">${n+1}</span>${t(k)}</button>`).join('')+`<button class="setb" data-act="tab" data-v="${setTab}" aria-current="${inSet}">⚙ ${t('settings')}</button>`;
  if(inSet)setTab=tab;
- const y=window.scrollY;document.getElementById('app').innerHTML=(inSet?`<div class="subnav">${['recipes','ings','cal','team'].filter(okTab).map(k=>`<button class="chip" data-act="tab" data-v="${k}" aria-pressed="${tab===k}">${t(k)}</button>`).join('')}</div>`:'')+{plan:viewPlan,sales:viewSales,use:viewUse,recipes:viewRecipes,ings:viewIngs,cal:viewCal,team:viewTeam}[tab]();gate();if(keep)window.scrollTo(0,y)}
+ const y=window.scrollY;document.getElementById('app').innerHTML=(inSet?`<div class="subnav">${['recipes','ings','cal','team'].filter(okTab).map(k=>`<button class="chip" data-act="tab" data-v="${k}" aria-pressed="${tab===k}">${t(k)}</button>`).join('')}</div>`:'')+{plan:viewPlan,sales:viewSales,use:viewUse,recipes:viewRecipes,ings:viewIngs,cal:viewCal,team:viewTeam,inv:viewInv}[tab]();gate();if(keep)window.scrollTo(0,y)}
 const num=v=>{const n=parseFloat(v);return isNaN(n)?null:n};
 function setTag(d,patch){const sp=special(d)||{label:'',mode:'exclude',factor:1};S.tags[d]=Object.assign({label:sp.label,mode:sp.mode,factor:sp.factor},patch)}
 
@@ -488,7 +491,7 @@ const TEAM_FN=SB_URL+'/functions/v1/team-access',APP_URL='https://atakanercaann.
 const RUNGS=['none','view','edit','delete','full'];
 let sb=null,me=null,perms={},base=null,queue=Promise.resolve(),pending=0,syncState='',lastEdit=0,booted=false,toastT=null;
 const can=(area,need)=>RUNGS.indexOf((perms&&perms[area])||'none')>=RUNGS.indexOf(need||'view');
-const TAB_AREA={sales:'sales',use:'usage',plan:'plan',recipes:'recipes',ings:'ingredients',cal:'calendar',team:'team'};
+const TAB_AREA={inv:'invoices',sales:'sales',use:'usage',plan:'plan',recipes:'recipes',ings:'ingredients',cal:'calendar',team:'team'};
 const okTab=k=>can(TAB_AREA[k],'view');
 /* what each button or field needs; anything not listed is free (moving around, language, dates to look at) */
 const ACT={sale:['sales','edit'],inc:['sales','edit'],dec:['sales','edit'],import:['sales','edit'],impSave:['sales','edit'],imap:['sales','edit'],ifac:['sales','edit'],ignoreRest:['sales','edit'],
@@ -500,11 +503,14 @@ const ACT={sale:['sales','edit'],inc:['sales','edit'],dec:['sales','edit'],impor
  resetAll:['nobody','full']};
 const allowed=a=>{const p=ACT[a];return !p||can(p[0],p[1])};
 function migrate(X){return addV22(addV21(addV20(addV19(addV18(addV17(addV16(addV15(addV14(addV13(addV12(addV11(addV10(addV9(addV8(addV7(addV6(addV5(addBread3(addBread2(addBread(X)))))))))))))))))))))}
-function fixTab(){if(!okTab(tab)){tab=['sales','use','plan','recipes','ings','cal','team'].find(okTab)||'sales'}if(!okTab(setTab))setTab=['recipes','ings','cal','team'].find(okTab)||setTab}
+function fixTab(){if(!okTab(tab)){tab=['sales','use','plan','inv','recipes','ings','cal','team'].find(okTab)||'sales'}if(!okTab(setTab))setTab=['recipes','ings','cal','team'].find(okTab)||setTab}
 function gate(){document.querySelectorAll('#app [data-act]').forEach(el=>{if(allowed(el.dataset.act))return;if(/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName))el.disabled=true;else el.hidden=true});
  const sb2=document.querySelector('nav .setb');if(sb2&&!['recipes','ings','cal','team'].some(okTab))sb2.hidden=true;
  const w=document.getElementById('who');if(w&&me){w.hidden=false;w.innerHTML=`<span class="sync${syncState==='bad'?' bad':''}">${syncState==='saving'?t('saving'):''}</span><span>${esc(me.email)}</span><button class="btn sm" data-act="logout">${t('signOut')}</button>`}
+ if(tab==='inv'&&window.InvoiceKit){const root=document.getElementById('invRoot');if(root){const h=RUNGS.indexOf(perms.invoices||'none');InvoiceKit.mountInvoicesPage(root,{store:InvoiceKit.supabaseStore(sb),ai:invoiceAi,config:InvoiceKit.config,can:{edit:h>=2,delete:h>=3,full:h>=4}})}}
  if(tab==='team'&&window.TeamKit){const root=document.getElementById('teamRoot');if(root)TeamKit.mountTeamPage(root,{api:teamApi,config:TeamKit.config})}}
+function viewInv(){return `<section class="card" id="invRoot"></section>`}
+async function invoiceAi(payload){const {data:{session}}=await sb.auth.getSession();const r=await fetch(SB_URL+'/functions/v1/invoice-reader',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(session&&session.access_token),apikey:SB_KEY},body:JSON.stringify(payload)});let j={};try{j=await r.json()}catch(e){}if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j}
 function viewTeam(){return `<section class="card" id="teamRoot"></section>`}
 function toast(m){let el=document.getElementById('toast');if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,4500)}
 
@@ -557,7 +563,7 @@ async function reload(quiet){try{const X=await pull(),lang=S.lang,myPlan=S.plan;
   const v0=X.v;S=migrate(X);S.lang=lang;if(!can('plan','edit')&&myPlan&&booted)S.plan=myPlan;
   if(!S.recs[selRec])selRec=Object.keys(S.recs)[0];
   if(S.v!==v0&&can('recipes','edit'))save();
-  if(!quiet||!document.activeElement||!/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName))render(true)}
+  if(!(quiet&&(tab==='inv'||tab==='team'))&&(!quiet||!document.activeElement||!/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)))render(true)}
  catch(e){toast(t('loadErr')+' '+((e&&e.message)||e))}}
 /* an empty database: the first admin fills it with the starting recipes and ingredients */
 async function firstFill(X){if(!(can('recipes','edit')&&can('ingredients','edit'))){document.getElementById('app').innerHTML=`<section class="card"><p>${t('emptyDb')}</p></section>`;return}
