@@ -9,24 +9,13 @@
 <style>
 /* Layout idea: one working column, sticky tab bar, dense tables that scroll sideways inside their own cards. */
 :root{
-  --bg:#f5f6f8; --surface:#ffffff; --ink:#111827; --muted:#4b5563; --line:#d3d8e0;
-  --accent:#1d4ed8; --accent-ink:#ffffff; --soft:#eaf0fc;
+  --bg:#faf4ec; --surface:#ffffff; --ink:#1c1410; --muted:#6a5a4e; --line:#e7d9ca;
+  --accent:#94552f; --accent-ink:#ffffff; --soft:#f6e8da; --brand:#c98a62;
   --warn:#a85a06; --warn-bg:#fdf0db; --crit:#b42318; --crit-bg:#fde7e4;
   --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#0f1218; --surface:#181c25; --ink:#eef1f6; --muted:#a8b1c0; --line:#2c3342;
-    --accent:#8fb0ff; --accent-ink:#0b1530; --soft:#1f2738;
-    --warn:#f0b35a; --warn-bg:#33270f; --crit:#ff8d80; --crit-bg:#3a1a16; color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#0f1218; --surface:#181c25; --ink:#eef1f6; --muted:#a8b1c0; --line:#2c3342;
-  --accent:#8fb0ff; --accent-ink:#0b1530; --soft:#1f2738;
-  --warn:#f0b35a; --warn-bg:#33270f; --crit:#ff8d80; --crit-bg:#3a1a16; color-scheme:dark;
-}
+:root{color-scheme:light}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);font-variant-numeric:tabular-nums}
@@ -103,12 +92,10 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;fon
 @media (max-width:760px){.two{grid-template-columns:1fr}.list{max-height:220px}h1 small{display:block;margin:4px 0 0}}
 @media (prefers-reduced-motion:no-preference){.btn,.chip,nav button{transition:background .12s}}
 [hidden]{display:none!important}
-.brand{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
-.brand .mark{display:inline-flex;align-items:center;gap:14px;background:#fff;border-radius:10px;padding:8px 14px}
-.brand img{height:34px;width:auto;display:block}
-.brand .fc{font:400 36px/1 "Ultra","Rockwell Extra Bold",serif;letter-spacing:.01em;color:#c98a62;-webkit-text-stroke:1.4px #000;paint-order:stroke fill;text-shadow:-3px 3px 0 #000;transform:translateY(-2px)}
+.brand{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px}
+.brand .mark{font:400 32px/1.1 "Ultra","Rockwell Extra Bold",serif;letter-spacing:.01em;color:var(--brand);-webkit-text-stroke:1.3px #1c1410;paint-order:stroke fill;text-shadow:-3px 3px 0 #1c1410;padding:2px 0 4px 3px}
 .brand small{margin-left:0}
-@media (max-width:520px){.brand img{height:26px}.brand .fc{font-size:26px;-webkit-text-stroke-width:1.1px;text-shadow:-2px 2px 0 #000}}
+@media (max-width:520px){.brand .mark{font-size:24px;-webkit-text-stroke-width:1px;text-shadow:-2px 2px 0 #1c1410}}
 .who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 .hr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sync{font-size:12px;color:var(--muted)}.sync.bad{color:var(--crit);font-weight:600}
@@ -125,7 +112,7 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;fon
 </head>
 <body>
 <header>
-  <h1 class="brand"><span class="mark"><img src="logo.png" alt="Bready" width="300" height="50"><span class="fc">FORECAST</span></span><small id="sub"></small></h1>
+  <h1 class="brand"><span class="mark">BREADY FORECAST</span><small id="sub"></small></h1>
   <div class="hr"><div class="who" id="who" hidden></div>
   <div class="lang" role="group" aria-label="Language">
     <button id="lang-tr" data-act="lang" data-v="tr">TR</button>
