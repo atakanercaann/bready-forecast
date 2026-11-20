@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bready Forecast</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=Jost:wght@600&display=swap" rel="stylesheet">
 <style>
 /* Layout idea: one working column, sticky tab bar, dense tables that scroll sideways inside their own cards. */
 :root{
@@ -103,6 +103,12 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;fon
 @media (max-width:760px){.two{grid-template-columns:1fr}.list{max-height:220px}h1 small{display:block;margin:4px 0 0}}
 @media (prefers-reduced-motion:no-preference){.btn,.chip,nav button{transition:background .12s}}
 [hidden]{display:none!important}
+.brand{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px}
+.brand .mark{display:inline-flex;align-items:center;gap:14px;background:#fff;border-radius:10px;padding:8px 14px}
+.brand img{height:34px;width:auto;display:block}
+.brand .fc{font:600 15px/1 "Jost","Futura","Century Gothic",sans-serif;letter-spacing:.32em;color:#111;padding-top:2px}
+.brand small{margin-left:0}
+@media (max-width:520px){.brand img{height:26px}.brand .fc{font-size:12px;letter-spacing:.25em}}
 .who{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 .hr{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .sync{font-size:12px;color:var(--muted)}.sync.bad{color:var(--crit);font-weight:600}
@@ -119,7 +125,7 @@ textarea{width:100%;min-height:90px;font-family:ui-monospace,Menlo,monospace;fon
 </head>
 <body>
 <header>
-  <h1>Bready Forecast<small id="sub"></small></h1>
+  <h1 class="brand"><span class="mark"><img src="logo.png" alt="Bready" width="300" height="50"><span class="fc">FORECAST</span></span><small id="sub"></small></h1>
   <div class="hr"><div class="who" id="who" hidden></div>
   <div class="lang" role="group" aria-label="Language">
     <button id="lang-tr" data-act="lang" data-v="tr">TR</button>
